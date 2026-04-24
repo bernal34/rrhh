@@ -11,6 +11,7 @@ export type Sucursal = {
 export type Puesto = {
   id: string;
   nombre: string;
+  descripcion: string | null;
   sueldo_base_sugerido: number | null;
   activo: boolean;
 };
@@ -54,12 +55,41 @@ export async function reactivarSucursal(id: string) {
   if (error) throw error;
 }
 
-export async function listPuestos() {
-  const { data, error } = await supabase
+export async function listPuestos(soloActivos = true) {
+  let q = supabase
     .from('puestos')
-    .select('id, nombre, sueldo_base_sugerido, activo')
-    .eq('activo', true)
+    .select('id, nombre, descripcion, sueldo_base_sugerido, activo')
     .order('nombre');
+  if (soloActivos) q = q.eq('activo', true);
+  const { data, error } = await q;
   if (error) throw error;
   return data as Puesto[];
+}
+
+export async function upsertPuesto(p: Partial<Puesto>) {
+  const payload: Record<string, unknown> = {
+    nombre: p.nombre,
+    descripcion: p.descripcion ?? null,
+    sueldo_base_sugerido: p.sueldo_base_sugerido ?? null,
+    activo: p.activo ?? true,
+  };
+  if (p.id) payload.id = p.id;
+  const { error } = await supabase.from('puestos').upsert(payload);
+  if (error) throw error;
+}
+
+export async function deletePuesto(id: string) {
+  const { error } = await supabase
+    .from('puestos')
+    .update({ activo: false })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function reactivarPuesto(id: string) {
+  const { error } = await supabase
+    .from('puestos')
+    .update({ activo: true })
+    .eq('id', id);
+  if (error) throw error;
 }

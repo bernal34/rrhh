@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './modules/Dashboard';
 import EmpleadosList from './modules/empleados/EmpleadosList';
 import SucursalesList from './modules/sucursales/SucursalesList';
+import PuestosList from './modules/puestos/PuestosList';
 import NominaPage from './modules/nomina/NominaPage';
 import AsistenciaList from './modules/asistencia/AsistenciaList';
 import DocumentosList from './modules/documentos/DocumentosList';
@@ -26,6 +27,7 @@ export default function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/empleados" element={<EmpleadosList />} />
                 <Route path="/sucursales" element={<SucursalesList />} />
+                <Route path="/puestos" element={<PuestosList />} />
                 <Route path="/horarios" element={<HorariosList />} />
                 <Route path="/asistencia" element={<AsistenciaList />} />
                 <Route path="/incidencias" element={<IncidenciasList />} />

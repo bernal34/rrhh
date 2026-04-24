@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Gavel,
   Building2,
+  Briefcase,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/lib/auth';
@@ -19,6 +20,7 @@ const nav = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/empleados', label: 'Empleados', icon: Users },
   { to: '/sucursales', label: 'Sucursales / Obras', icon: Building2 },
+  { to: '/puestos', label: 'Puestos', icon: Briefcase },
   { to: '/horarios', label: 'Horarios', icon: Clock },
   { to: '/asistencia', label: 'Asistencia', icon: CalendarClock },
   { to: '/incidencias', label: 'Incidencias', icon: AlertCircle },
