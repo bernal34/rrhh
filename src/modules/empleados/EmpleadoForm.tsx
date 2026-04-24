@@ -22,6 +22,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import EmpleadoNotasPanel from './EmpleadoNotasPanel';
 import EmpleadoDocsPanel from './EmpleadoDocsPanel';
+import EmpleadoSueldosPanel from './EmpleadoSueldosPanel';
 
 type Props = {
   open: boolean;
@@ -296,6 +297,11 @@ export default function EmpleadoForm({ open, onClose, empleado, onSaved }: Props
         <Tabs
           tabs={[
             { key: 'datos', label: 'Datos', content: datosTab },
+            {
+              key: 'sueldo',
+              label: 'Sueldo',
+              content: <EmpleadoSueldosPanel empleadoId={empleado.id} />,
+            },
             {
               key: 'docs',
               label: 'Documentos',
