@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 // usuario autenticado puede entrar (las tarjetas se filtran por RLS).
 export const MODULOS = [
   'empleados',
+  'empresas',
   'sucursales',
   'puestos',
   'horarios',
@@ -27,6 +28,7 @@ export type Modulo = (typeof MODULOS)[number];
 
 export const MODULO_LABEL: Record<Modulo, string> = {
   empleados: 'Empleados',
+  empresas: 'Empresas',
   sucursales: 'Sucursales / Obras',
   puestos: 'Puestos',
   horarios: 'Horarios',

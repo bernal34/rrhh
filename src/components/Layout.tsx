@@ -28,6 +28,7 @@ import GlobalSearch from './GlobalSearch';
 const nav = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, modulo: null },
   { to: '/empleados', label: 'Empleados', icon: Users, modulo: 'empleados' },
+  { to: '/empresas', label: 'Empresas', icon: Building2, modulo: 'empresas' },
   { to: '/sucursales', label: 'Sucursales / Obras', icon: Building2, modulo: 'sucursales' },
   { to: '/puestos', label: 'Puestos', icon: Briefcase, modulo: 'puestos' },
   { to: '/horarios', label: 'Horarios', icon: Clock, modulo: 'horarios' },

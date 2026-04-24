@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Calculator } from 'lucide-react';
+import { Calculator, FileSignature } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { supabase } from '@/lib/supabase';
 import { Empleado, listEmpleados } from '@/services/empleadosService';
+import { abrirFiniquitoPDF } from '@/lib/finiquitoPdf';
 
 const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
@@ -204,8 +206,36 @@ export default function FiniquitoPanel() {
                   SDI: {fmt.format(calc.salarioDiarioIntegrado)}
                 </div>
               </div>
-              <div className="text-3xl font-bold text-brand-700 tabular-nums">
-                {fmt.format(calc.granTotal)}
+              <div className="flex items-center gap-3">
+                <div className="text-3xl font-bold text-brand-700 tabular-nums">
+                  {fmt.format(calc.granTotal)}
+                </div>
+                <Button
+                  onClick={() =>
+                    abrirFiniquitoPDF(emp.id, {
+                      causa,
+                      fechaBaja,
+                      sueldoMensual: sueldo,
+                      salarioDiario: calc.salarioDiario,
+                      salarioDiarioIntegrado: calc.salarioDiarioIntegrado,
+                      diasAntiguedad: calc.dias,
+                      aniosAntiguedad: calc.anios,
+                      aguinaldoProp: calc.aguinaldoProp,
+                      vacacionesProp: calc.vacacionesProp,
+                      primaVacacional: calc.primaVacacional,
+                      sueldoPendiente: calc.sueldoPendiente,
+                      vacPendientesMonto: calc.vacPendientesMonto,
+                      indemn3meses: calc.indemn3meses,
+                      prima20: calc.prima20,
+                      primaAntiguedad: calc.primaAntiguedad,
+                      totalFiniquito: calc.totalFiniquito,
+                      totalLiquidacion: calc.totalLiquidacion,
+                      granTotal: calc.granTotal,
+                    })
+                  }
+                >
+                  <FileSignature size={16} /> Generar PDF firma
+                </Button>
               </div>
             </div>
           </div>

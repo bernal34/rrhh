@@ -22,6 +22,7 @@ import OnboardingPage from './modules/onboarding/OnboardingPage';
 import CapacitacionPage from './modules/capacitacion/CapacitacionPage';
 import OrganigramaPage from './modules/organigrama/OrganigramaPage';
 import AuditoriaPage from './modules/auditoria/AuditoriaPage';
+import EmpresasList from './modules/empresas/EmpresasList';
 
 const r = (modulo: string, el: React.ReactNode) => (
   <RequireModulo modulo={modulo}>{el}</RequireModulo>
@@ -40,6 +41,7 @@ export default function App() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/empleados" element={r('empleados', <EmpleadosList />)} />
                 <Route path="/sucursales" element={r('sucursales', <SucursalesList />)} />
+                <Route path="/empresas" element={r('empresas', <EmpresasList />)} />
                 <Route path="/puestos" element={r('puestos', <PuestosList />)} />
                 <Route path="/horarios" element={r('horarios', <HorariosList />)} />
                 <Route path="/asistencia" element={r('asistencia', <AsistenciaList />)} />

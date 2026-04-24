@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Plus, Search, Download, FileText } from 'lucide-react';
+import { Plus, Search, Download, FileText, FileSignature } from 'lucide-react';
 import { abrirConstanciaLaboral } from '@/lib/constancia';
+import { abrirContrato } from '@/lib/contrato';
 import { useEmpleados } from '@/hooks/useEmpleados';
 import { useCatalogos } from '@/hooks/useCatalogos';
 import { useAuth } from '@/lib/auth';
@@ -198,6 +199,14 @@ export default function EmpleadosList() {
                     title="Generar constancia laboral"
                   >
                     <FileText size={14} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => abrirContrato(emp.id)}
+                    title="Generar contrato individual de trabajo"
+                  >
+                    <FileSignature size={14} />
                   </Button>
                   {editar && (
                     <>

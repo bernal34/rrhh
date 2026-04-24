@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { Tabs } from '@/components/ui/Tabs';
 import { useCatalogos } from '@/hooks/useCatalogos';
+import { Empresa, listEmpresas } from '@/services/empresasService';
 import {
   Empleado,
   getHikMapping,
@@ -78,6 +79,7 @@ export default function EmpleadoForm({ open, onClose, empleado, onSaved }: Props
   const [hikPersonId, setHikPersonId] = useState<string | null>(null);
   const [syncingFoto, setSyncingFoto] = useState(false);
   const [grupos, setGrupos] = useState<GrupoHorario[]>([]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [grupoActual, setGrupoActual] = useState<string>('');
   const [grupoInicial, setGrupoInicial] = useState<string>('');
 
@@ -89,6 +91,7 @@ export default function EmpleadoForm({ open, onClose, empleado, onSaved }: Props
     setGrupoActual('');
     setGrupoInicial('');
     listGrupos(true).then(setGrupos);
+    listEmpresas(true).then(setEmpresas).catch(() => setEmpresas([]));
 
     if (empleado?.id) {
       getHikMapping(empleado.id).then((m) => setHikPersonId(m?.hik_person_id ?? null));
@@ -224,6 +227,13 @@ export default function EmpleadoForm({ open, onClose, empleado, onSaved }: Props
       </Section>
 
       <Section title="Empleo">
+        <Select
+          label="Empresa contratante"
+          options={empresas.map((e) => ({ value: e.id, label: e.razon_social }))}
+          placeholder={empresas.length === 0 ? 'Captura empresas primero' : 'Selecciona empresa'}
+          value={form.empresa_id ?? ''}
+          onChange={(e) => set('empresa_id', e.target.value)}
+        />
         <Select
           label="Sucursal *"
           options={sucursales.map((s) => ({ value: s.id, label: s.nombre }))}
