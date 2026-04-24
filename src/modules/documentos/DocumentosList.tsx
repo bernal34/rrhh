@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/lib/auth';
 import {
   Documento,
   eliminarDocumento,
@@ -31,6 +32,8 @@ function badgeVencimiento(dias: number | null) {
 }
 
 export default function DocumentosList() {
+  const { puedeEditar } = useAuth();
+  const editar = puedeEditar('documentos');
   const [rows, setRows] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(true);
   const [porVencer, setPorVencer] = useState(false);
@@ -65,9 +68,11 @@ export default function DocumentosList() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Documentos</h1>
-        <Button onClick={() => setOpen(true)}>
-          <Plus size={16} /> Subir documento
-        </Button>
+        {editar && (
+          <Button onClick={() => setOpen(true)}>
+            <Plus size={16} /> Subir documento
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
@@ -137,9 +142,11 @@ export default function DocumentosList() {
                   <Button variant="ghost" size="sm" onClick={() => onVer(d)}>
                     <Eye size={14} />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onBorrar(d)}>
-                    <Trash2 size={14} />
-                  </Button>
+                  {editar && (
+                    <Button variant="ghost" size="sm" onClick={() => onBorrar(d)}>
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/lib/auth';
 import {
   Acta,
   TipoActa,
@@ -23,6 +24,8 @@ const tipoColor: Record<TipoActa, string> = {
 };
 
 export default function ActasList() {
+  const { puedeEditar } = useAuth();
+  const editar = puedeEditar('actas');
   const [rows, setRows] = useState<Acta[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -45,9 +48,11 @@ export default function ActasList() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Actas administrativas</h1>
-        <Button onClick={() => setOpen(true)}>
-          <Plus size={16} /> Nueva acta
-        </Button>
+        {editar && (
+          <Button onClick={() => setOpen(true)}>
+            <Plus size={16} /> Nueva acta
+          </Button>
+        )}
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-3">

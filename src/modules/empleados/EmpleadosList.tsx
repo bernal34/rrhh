@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Search, Download } from 'lucide-react';
 import { useEmpleados } from '@/hooks/useEmpleados';
 import { useCatalogos } from '@/hooks/useCatalogos';
+import { useAuth } from '@/lib/auth';
 import { Empleado, importarDesdeHik } from '@/services/empleadosService';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -17,6 +18,8 @@ const estatusBadge: Record<string, string> = {
 };
 
 export default function EmpleadosList() {
+  const { puedeEditar } = useAuth();
+  const editar = puedeEditar('empleados');
   const [q, setQ] = useState('');
   const [sucursalId, setSucursalId] = useState('');
   const [estatus, setEstatus] = useState('');
@@ -66,14 +69,16 @@ export default function EmpleadosList() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Empleados</h1>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={onImportar} loading={importing}>
-            <Download size={16} /> Importar desde HCC
-          </Button>
-          <Button onClick={onNuevo}>
-            <Plus size={16} /> Nuevo empleado
-          </Button>
-        </div>
+        {editar && (
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={onImportar} loading={importing}>
+              <Download size={16} /> Importar desde HCC
+            </Button>
+            <Button onClick={onNuevo}>
+              <Plus size={16} /> Nuevo empleado
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-4">
@@ -145,8 +150,10 @@ export default function EmpleadosList() {
             {data.map((emp) => (
               <tr
                 key={emp.id}
-                className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer"
-                onClick={() => onEditar(emp)}
+                className={`border-t border-slate-100 hover:bg-slate-50 ${
+                  editar ? 'cursor-pointer' : ''
+                }`}
+                onClick={() => editar && onEditar(emp)}
               >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
@@ -183,13 +190,17 @@ export default function EmpleadosList() {
                   className="px-4 py-3 text-right"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Button variant="ghost" size="sm" onClick={() => onEditar(emp)}>
-                    Editar
-                  </Button>
-                  {emp.estatus !== 'baja' && (
-                    <Button variant="ghost" size="sm" onClick={() => onBaja(emp)}>
-                      Dar de baja
-                    </Button>
+                  {editar && (
+                    <>
+                      <Button variant="ghost" size="sm" onClick={() => onEditar(emp)}>
+                        Editar
+                      </Button>
+                      {emp.estatus !== 'baja' && (
+                        <Button variant="ghost" size="sm" onClick={() => onBaja(emp)}>
+                          Dar de baja
+                        </Button>
+                      )}
+                    </>
                   )}
                 </td>
               </tr>

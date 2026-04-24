@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/lib/auth';
 import {
   ConceptoNomina,
   listConceptos,
@@ -12,6 +13,8 @@ import {
 } from '@/services/conceptosService';
 
 export default function ConceptosPanel() {
+  const { puedeEditar } = useAuth();
+  const editar = puedeEditar('nomina');
   const [items, setItems] = useState<ConceptoNomina[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -31,16 +34,18 @@ export default function ConceptosPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex justify-end">
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setOpen(true);
-          }}
-        >
-          <Plus size={16} /> Nuevo concepto
-        </Button>
-      </div>
+      {editar && (
+        <div className="flex justify-end">
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setOpen(true);
+            }}
+          >
+            <Plus size={16} /> Nuevo concepto
+          </Button>
+        </div>
+      )}
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-left text-slate-600">
@@ -64,8 +69,11 @@ export default function ConceptosPanel() {
             {items.map((c) => (
               <tr
                 key={c.id}
-                className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
+                className={`border-t border-slate-100 ${
+                  editar ? 'cursor-pointer hover:bg-slate-50' : ''
+                }`}
                 onClick={() => {
+                  if (!editar) return;
                   setEditing(c);
                   setOpen(true);
                 }}
@@ -89,6 +97,7 @@ export default function ConceptosPanel() {
                   <input
                     type="checkbox"
                     checked={c.activo}
+                    disabled={!editar}
                     onChange={async (e) => {
                       await toggleConcepto(c.id, e.target.checked);
                       await load();

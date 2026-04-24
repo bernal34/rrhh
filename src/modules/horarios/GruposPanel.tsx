@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useCatalogos } from '@/hooks/useCatalogos';
+import { useAuth } from '@/lib/auth';
 import {
   GrupoHorario,
   Turno,
@@ -19,6 +20,8 @@ import {
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 export default function GruposPanel() {
+  const { puedeEditar } = useAuth();
+  const editar = puedeEditar('horarios');
   const [grupos, setGrupos] = useState<GrupoHorario[]>([]);
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,16 +44,18 @@ export default function GruposPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex justify-end">
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setOpen(true);
-          }}
-        >
-          <Plus size={16} /> Nuevo grupo
-        </Button>
-      </div>
+      {editar && (
+        <div className="flex justify-end">
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setOpen(true);
+            }}
+          >
+            <Plus size={16} /> Nuevo grupo
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {loading && <div className="text-slate-500">Cargando…</div>}
@@ -60,6 +65,7 @@ export default function GruposPanel() {
             key={g.id}
             grupo={g}
             turnos={turnos}
+            editar={editar}
             onEdit={() => {
               setEditing(g);
               setOpen(true);
@@ -90,11 +96,13 @@ export default function GruposPanel() {
 function GrupoCard({
   grupo,
   turnos,
+  editar,
   onEdit,
   onDelete,
 }: {
   grupo: GrupoHorario;
   turnos: Turno[];
+  editar: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -122,14 +130,16 @@ function GrupoCard({
           <div className="font-semibold text-slate-800">{grupo.nombre}</div>
           <div className="text-xs text-slate-500">{grupo.descripcion ?? '—'}</div>
         </div>
-        <div className="flex gap-1">
-          <Button variant="ghost" size="sm" onClick={onEdit}>
-            Editar
-          </Button>
-          <Button variant="ghost" size="sm" onClick={onDelete}>
-            Borrar
-          </Button>
-        </div>
+        {editar && (
+          <div className="flex gap-1">
+            <Button variant="ghost" size="sm" onClick={onEdit}>
+              Editar
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onDelete}>
+              Borrar
+            </Button>
+          </div>
+        )}
       </div>
       <div className="grid grid-cols-7 gap-1 text-xs">
         {DIAS.map((dia, idx) => {
@@ -140,8 +150,9 @@ function GrupoCard({
               <div className="text-center font-medium text-slate-600">{dia}</div>
               <select
                 value={turnoId}
+                disabled={!editar}
                 onChange={(e) => onCambiar(idx, e.target.value)}
-                className="rounded border border-slate-300 bg-white px-1 py-1 text-xs outline-none focus:border-brand-500"
+                className="rounded border border-slate-300 bg-white px-1 py-1 text-xs outline-none focus:border-brand-500 disabled:cursor-not-allowed disabled:bg-slate-50"
                 style={turno ? { background: `${turno.color}15`, borderColor: turno.color ?? undefined } : {}}
               >
                 <option value="">Descanso</option>

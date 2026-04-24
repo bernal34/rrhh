@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useCatalogos } from '@/hooks/useCatalogos';
+import { useAuth } from '@/lib/auth';
 import {
   AsistenciaRow,
   descargarCsv,
@@ -24,6 +25,8 @@ const estatusColor: Record<string, string> = {
 };
 
 export default function AsistenciaList() {
+  const { puedeEditar } = useAuth();
+  const editar = puedeEditar('asistencia');
   const { sucursales } = useCatalogos();
   const [desde, setDesde] = useState(hoy());
   const [hasta, setHasta] = useState(hoy());
@@ -70,9 +73,11 @@ export default function AsistenciaList() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Asistencia</h1>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={onRecalcular} loading={recalc}>
-            <RefreshCw size={16} /> Recalcular rango
-          </Button>
+          {editar && (
+            <Button variant="secondary" onClick={onRecalcular} loading={recalc}>
+              <RefreshCw size={16} /> Recalcular rango
+            </Button>
+          )}
           <Button variant="secondary" onClick={() => descargarCsv(rows, `asistencia_${desde}_${hasta}.csv`)}>
             <Download size={16} /> CSV
           </Button>

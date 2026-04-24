@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/lib/auth';
 import {
   Turno,
   deleteTurno,
@@ -11,6 +12,8 @@ import {
 } from '@/services/horariosService';
 
 export default function TurnosPanel() {
+  const { puedeEditar } = useAuth();
+  const editar = puedeEditar('horarios');
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -36,16 +39,18 @@ export default function TurnosPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex justify-end">
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setOpen(true);
-          }}
-        >
-          <Plus size={16} /> Nuevo turno
-        </Button>
-      </div>
+      {editar && (
+        <div className="flex justify-end">
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setOpen(true);
+            }}
+          >
+            <Plus size={16} /> Nuevo turno
+          </Button>
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <table className="min-w-full text-sm">
@@ -77,8 +82,11 @@ export default function TurnosPanel() {
             {turnos.map((t) => (
               <tr
                 key={t.id}
-                className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
+                className={`border-t border-slate-100 ${
+                  editar ? 'cursor-pointer hover:bg-slate-50' : ''
+                }`}
                 onClick={() => {
+                  if (!editar) return;
                   setEditing(t);
                   setOpen(true);
                 }}
@@ -95,9 +103,11 @@ export default function TurnosPanel() {
                 <td className="px-4 py-3">{t.tolerancia_retardo_min} min</td>
                 <td className="px-4 py-3">{t.tolerancia_falta_min} min</td>
                 <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="sm" onClick={() => onBorrar(t)}>
-                    <Trash2 size={14} />
-                  </Button>
+                  {editar && (
+                    <Button variant="ghost" size="sm" onClick={() => onBorrar(t)}>
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/lib/auth';
 import {
   Incidencia,
   TipoIncidencia,
@@ -23,6 +24,8 @@ const estatusColor: Record<string, string> = {
 };
 
 export default function IncidenciasList() {
+  const { puedeEditar } = useAuth();
+  const editar = puedeEditar('incidencias');
   const [rows, setRows] = useState<Incidencia[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -58,9 +61,11 @@ export default function IncidenciasList() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Incidencias</h1>
-        <Button onClick={() => setOpen(true)}>
-          <Plus size={16} /> Registrar incidencia
-        </Button>
+        {editar && (
+          <Button onClick={() => setOpen(true)}>
+            <Plus size={16} /> Registrar incidencia
+          </Button>
+        )}
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-3">
@@ -127,7 +132,7 @@ export default function IncidenciasList() {
                   </span>
                 </td>
                 <td className="px-4 py-2 text-right">
-                  {i.estatus === 'registrada' && (
+                  {editar && i.estatus === 'registrada' && (
                     <div className="flex justify-end gap-1">
                       <Button
                         variant="ghost"

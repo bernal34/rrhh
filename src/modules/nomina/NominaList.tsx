@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useCatalogos } from '@/hooks/useCatalogos';
+import { useAuth } from '@/lib/auth';
 import {
   Periodo,
   Prenomina,
@@ -31,6 +32,8 @@ function fmtMoney(n: number) {
 }
 
 export default function NominaList() {
+  const { puedeEditar } = useAuth();
+  const editar = puedeEditar('nomina');
   const [prenominas, setPrenominas] = useState<Prenomina[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalPeriodo, setModalPeriodo] = useState(false);
@@ -62,14 +65,16 @@ export default function NominaList() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Nómina y prenómina</h1>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => setModalPeriodo(true)}>
-            <Plus size={16} /> Nuevo periodo
-          </Button>
-          <Button onClick={() => setModalGen(true)}>
-            <FileText size={16} /> Generar prenómina
-          </Button>
-        </div>
+        {editar && (
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setModalPeriodo(true)}>
+              <Plus size={16} /> Nuevo periodo
+            </Button>
+            <Button onClick={() => setModalGen(true)}>
+              <FileText size={16} /> Generar prenómina
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -128,7 +133,7 @@ export default function NominaList() {
                     <Button variant="ghost" size="sm" onClick={() => setDetalleId(p.id)}>
                       Ver
                     </Button>
-                    {p.estatus === 'borrador' && (
+                    {editar && p.estatus === 'borrador' && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -137,27 +142,28 @@ export default function NominaList() {
                         <Send size={14} /> Enviar
                       </Button>
                     )}
-                    {(p.estatus === 'borrador' || p.estatus === 'en_revision') && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => accion(() => autorizarPrenomina(p.id))}
-                        >
-                          <Check size={14} /> Autorizar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const m = prompt('Motivo de cancelación:');
-                            if (m) accion(() => cancelarPrenomina(p.id, m));
-                          }}
-                        >
-                          <X size={14} />
-                        </Button>
-                      </>
-                    )}
+                    {editar &&
+                      (p.estatus === 'borrador' || p.estatus === 'en_revision') && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => accion(() => autorizarPrenomina(p.id))}
+                          >
+                            <Check size={14} /> Autorizar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const m = prompt('Motivo de cancelación:');
+                              if (m) accion(() => cancelarPrenomina(p.id, m));
+                            }}
+                          >
+                            <X size={14} />
+                          </Button>
+                        </>
+                      )}
                   </div>
                 </td>
               </tr>
