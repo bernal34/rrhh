@@ -42,7 +42,19 @@ export async function listTurnos(onlyActive = true) {
 }
 
 export async function upsertTurno(t: Partial<Turno>) {
-  const { data, error } = await supabase.from('turnos').upsert(t).select().single();
+  // cruza_medianoche es columna GENERATED en Postgres — no se puede escribir.
+  // Whitelist de campos editables.
+  const payload: Record<string, unknown> = {
+    nombre: t.nombre,
+    hora_entrada: t.hora_entrada,
+    hora_salida: t.hora_salida,
+    tolerancia_retardo_min: t.tolerancia_retardo_min,
+    tolerancia_falta_min: t.tolerancia_falta_min,
+    color: t.color,
+    activo: t.activo ?? true,
+  };
+  if (t.id) payload.id = t.id;
+  const { data, error } = await supabase.from('turnos').upsert(payload).select().single();
   if (error) throw error;
   return data as Turno;
 }
