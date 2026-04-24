@@ -51,12 +51,12 @@ export default function FiniquitoPanel() {
     if (!empleadoId) return;
     supabase
       .from('empleado_sueldo')
-      .select('sueldo_base')
+      .select('sueldo_mensual')
       .eq('empleado_id', empleadoId)
       .order('vigente_desde', { ascending: false })
       .limit(1)
       .maybeSingle()
-      .then(({ data }: any) => setSueldo(data?.sueldo_base ?? 0));
+      .then(({ data }: any) => setSueldo(data?.sueldo_mensual ?? 0));
   }, [empleadoId]);
 
   const emp = empleados.find((e) => e.id === empleadoId);

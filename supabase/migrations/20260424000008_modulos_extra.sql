@@ -153,28 +153,25 @@ create policy "bitacora admin" on bitacora_auditoria
 -- Aguinaldo: mínimo 15 días de salario por año proporcional al tiempo trabajado.
 create or replace view aguinaldo_proyectado as
 with sueldo_actual as (
-  select distinct on (empleado_id) empleado_id, sueldo_base, vigente_desde
+  select distinct on (empleado_id) empleado_id, sueldo_diario, sueldo_mensual, vigente_desde
     from empleado_sueldo
    order by empleado_id, vigente_desde desc
 )
 select e.id as empleado_id,
        e.nombre, e.apellido_paterno, e.apellido_materno, e.codigo, e.sucursal_id,
        e.fecha_ingreso,
-       coalesce(s.sueldo_base, 0) as sueldo_mensual,
-       (coalesce(s.sueldo_base, 0) / 30.0) as salario_diario,
-       -- días trabajados en el año actual (max 365)
+       coalesce(s.sueldo_mensual, 0) as sueldo_mensual,
+       coalesce(s.sueldo_diario, 0)  as salario_diario,
        least(
-         extract(day from current_date - greatest(e.fecha_ingreso, date_trunc('year', current_date)::date))::int + 1,
+         (current_date - greatest(e.fecha_ingreso, date_trunc('year', current_date)::date))::int + 1,
          365
        ) as dias_trabajados_anio,
-       -- aguinaldo proporcional = (días_trabajados * 15) / 365 * salario_diario
        round(
-         (least(extract(day from current_date - greatest(e.fecha_ingreso, date_trunc('year', current_date)::date))::int + 1, 365) * 15.0)
-         / 365.0 * (coalesce(s.sueldo_base, 0) / 30.0),
+         (least((current_date - greatest(e.fecha_ingreso, date_trunc('year', current_date)::date))::int + 1, 365) * 15.0)
+         / 365.0 * coalesce(s.sueldo_diario, 0),
          2
        ) as aguinaldo_proporcional,
-       -- aguinaldo completo (15 días) si trabajó todo el año
-       round(15.0 * (coalesce(s.sueldo_base, 0) / 30.0), 2) as aguinaldo_completo_15dias
+       round(15.0 * coalesce(s.sueldo_diario, 0), 2) as aguinaldo_completo_15dias
   from empleados e
   left join sueldo_actual s on s.empleado_id = e.id
  where e.estatus in ('activo','permiso','vacaciones');

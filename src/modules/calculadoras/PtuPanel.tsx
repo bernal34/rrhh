@@ -41,12 +41,12 @@ export default function PtuPanel() {
       supabase
         .from('empleados')
         .select('id, nombre, apellido_paterno, codigo, fecha_ingreso, fecha_baja, estatus'),
-      supabase.from('empleado_sueldo').select('empleado_id, sueldo_base, vigente_desde'),
+      supabase.from('empleado_sueldo').select('empleado_id, sueldo_mensual, vigente_desde'),
     ]).then(([eRes, sRes]) => {
       const ultimoSueldo = new Map<string, number>();
       (sRes.data ?? []).forEach((s: any) => {
         const prev = ultimoSueldo.get(s.empleado_id);
-        if (!prev || prev < s.sueldo_base) ultimoSueldo.set(s.empleado_id, s.sueldo_base);
+        if (!prev || prev < s.sueldo_mensual) ultimoSueldo.set(s.empleado_id, s.sueldo_mensual);
       });
       const emps: Emp[] = (eRes.data ?? []).map((e: any) => ({
         id: e.id,

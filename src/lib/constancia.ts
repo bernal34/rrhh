@@ -15,7 +15,7 @@ type Empleado = {
   sucursal: { nombre: string; direccion: string | null } | null;
 };
 
-type SueldoRow = { sueldo_base: number };
+type SueldoRow = { sueldo_mensual: number };
 
 const fmtMXN = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
@@ -60,12 +60,12 @@ export async function abrirConstanciaLaboral(empleadoId: string, opts: { incluir
   if (opts.incluirSueldo) {
     const { data: s } = await supabase
       .from('empleado_sueldo')
-      .select('sueldo_base')
+      .select('sueldo_mensual')
       .eq('empleado_id', empleadoId)
       .order('vigente_desde', { ascending: false })
       .limit(1)
       .maybeSingle<SueldoRow>();
-    sueldo = s?.sueldo_base ?? null;
+    sueldo = s?.sueldo_mensual ?? null;
   }
 
   const e = emp as unknown as Empleado;
