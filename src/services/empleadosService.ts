@@ -21,6 +21,7 @@ export type Empleado = {
   motivo_baja: string | null;
   estatus: 'activo' | 'baja' | 'permiso' | 'vacaciones';
   foto_url: string | null;
+  jefe_id?: string | null;
 };
 
 export async function listEmpleados(filtros?: { sucursal_id?: string; estatus?: string }) {

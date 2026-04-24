@@ -16,6 +16,12 @@ import IncidenciasList from './modules/incidencias/IncidenciasList';
 import ActasList from './modules/actas/ActasList';
 import UsuariosList from './modules/usuarios/UsuariosList';
 import VacacionesPage from './modules/vacaciones/VacacionesPage';
+import CalculadorasPage from './modules/calculadoras/CalculadorasPage';
+import CalendarioPage from './modules/calendario/CalendarioPage';
+import OnboardingPage from './modules/onboarding/OnboardingPage';
+import CapacitacionPage from './modules/capacitacion/CapacitacionPage';
+import OrganigramaPage from './modules/organigrama/OrganigramaPage';
+import AuditoriaPage from './modules/auditoria/AuditoriaPage';
 
 const r = (modulo: string, el: React.ReactNode) => (
   <RequireModulo modulo={modulo}>{el}</RequireModulo>
@@ -39,6 +45,12 @@ export default function App() {
                 <Route path="/asistencia" element={r('asistencia', <AsistenciaList />)} />
                 <Route path="/incidencias" element={r('incidencias', <IncidenciasList />)} />
                 <Route path="/vacaciones" element={r('vacaciones', <VacacionesPage />)} />
+                <Route path="/calendario" element={r('calendario', <CalendarioPage />)} />
+                <Route path="/onboarding" element={r('onboarding', <OnboardingPage />)} />
+                <Route path="/capacitacion" element={r('capacitacion', <CapacitacionPage />)} />
+                <Route path="/calculadoras" element={r('calculadoras', <CalculadorasPage />)} />
+                <Route path="/organigrama" element={r('organigrama', <OrganigramaPage />)} />
+                <Route path="/auditoria" element={r('auditoria', <AuditoriaPage />)} />
                 <Route path="/actas" element={r('actas', <ActasList />)} />
                 <Route path="/nomina" element={r('nomina', <NominaPage />)} />
                 <Route path="/documentos" element={r('documentos', <DocumentosList />)} />

@@ -15,6 +15,12 @@ export const MODULOS = [
   'documentos',
   'reportes',
   'usuarios',
+  'calendario',
+  'onboarding',
+  'capacitacion',
+  'calculadoras',
+  'organigrama',
+  'auditoria',
 ] as const;
 
 export type Modulo = (typeof MODULOS)[number];
@@ -32,6 +38,12 @@ export const MODULO_LABEL: Record<Modulo, string> = {
   documentos: 'Documentos',
   reportes: 'Reportes',
   usuarios: 'Usuarios',
+  calendario: 'Calendario',
+  onboarding: 'Onboarding/Offboarding',
+  capacitacion: 'Capacitación',
+  calculadoras: 'Calculadoras',
+  organigrama: 'Organigrama',
+  auditoria: 'Auditoría',
 };
 
 export type PermisoModulo = { modulo: string; puede_editar: boolean };

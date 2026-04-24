@@ -14,9 +14,16 @@ import {
   Briefcase,
   ShieldCheck,
   Palmtree,
+  Calculator,
+  Calendar,
+  GraduationCap,
+  ClipboardCheck,
+  Network,
+  Activity,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/lib/auth';
+import GlobalSearch from './GlobalSearch';
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, modulo: null },
@@ -27,6 +34,12 @@ const nav = [
   { to: '/asistencia', label: 'Asistencia', icon: CalendarClock, modulo: 'asistencia' },
   { to: '/incidencias', label: 'Incidencias', icon: AlertCircle, modulo: 'incidencias' },
   { to: '/vacaciones', label: 'Vacaciones', icon: Palmtree, modulo: 'vacaciones' },
+  { to: '/calendario', label: 'Calendario', icon: Calendar, modulo: 'calendario' },
+  { to: '/onboarding', label: 'Onboarding', icon: ClipboardCheck, modulo: 'onboarding' },
+  { to: '/capacitacion', label: 'Capacitación', icon: GraduationCap, modulo: 'capacitacion' },
+  { to: '/calculadoras', label: 'Calculadoras', icon: Calculator, modulo: 'calculadoras' },
+  { to: '/organigrama', label: 'Organigrama', icon: Network, modulo: 'organigrama' },
+  { to: '/auditoria', label: 'Auditoría', icon: Activity, modulo: 'auditoria' },
   { to: '/actas', label: 'Actas', icon: Gavel, modulo: 'actas' },
   { to: '/nomina', label: 'Nómina', icon: DollarSign, modulo: 'nomina' },
   { to: '/documentos', label: 'Documentos', icon: FileText, modulo: 'documentos' },
@@ -75,7 +88,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto p-6">{children}</main>
+      <main className="flex flex-1 flex-col overflow-hidden">
+        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+          <GlobalSearch />
+        </header>
+        <div className="flex-1 overflow-auto p-6">{children}</div>
+      </main>
     </div>
   );
 }

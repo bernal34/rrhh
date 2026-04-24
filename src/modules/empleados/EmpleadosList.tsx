@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Plus, Search, Download } from 'lucide-react';
+import { Plus, Search, Download, FileText } from 'lucide-react';
+import { abrirConstanciaLaboral } from '@/lib/constancia';
 import { useEmpleados } from '@/hooks/useEmpleados';
 import { useCatalogos } from '@/hooks/useCatalogos';
 import { useAuth } from '@/lib/auth';
@@ -190,6 +191,14 @@ export default function EmpleadosList() {
                   className="px-4 py-3 text-right"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => abrirConstanciaLaboral(emp.id)}
+                    title="Generar constancia laboral"
+                  >
+                    <FileText size={14} />
+                  </Button>
                   {editar && (
                     <>
                       <Button variant="ghost" size="sm" onClick={() => onEditar(emp)}>
