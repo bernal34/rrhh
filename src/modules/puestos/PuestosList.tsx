@@ -3,6 +3,7 @@ import { Plus, Trash2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/lib/auth';
 import {
   Puesto,
   deletePuesto,
@@ -18,6 +19,8 @@ const fmtMXN = new Intl.NumberFormat('es-MX', {
 });
 
 export default function PuestosList() {
+  const { puedeEditar } = useAuth();
+  const editar = puedeEditar('puestos');
   const [puestos, setPuestos] = useState<Puesto[]>([]);
   const [loading, setLoading] = useState(true);
   const [verInactivos, setVerInactivos] = useState(false);
@@ -60,14 +63,16 @@ export default function PuestosList() {
             />
             Mostrar inactivos
           </label>
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setOpen(true);
-            }}
-          >
-            <Plus size={16} /> Nuevo puesto
-          </Button>
+          {editar && (
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setOpen(true);
+              }}
+            >
+              <Plus size={16} /> Nuevo puesto
+            </Button>
+          )}
         </div>
       </div>
 
@@ -100,8 +105,11 @@ export default function PuestosList() {
             {puestos.map((p) => (
               <tr
                 key={p.id}
-                className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
+                className={`border-t border-slate-100 ${
+                  editar ? 'cursor-pointer hover:bg-slate-50' : ''
+                }`}
                 onClick={() => {
+                  if (!editar) return;
                   setEditing(p);
                   setOpen(true);
                 }}
@@ -123,15 +131,16 @@ export default function PuestosList() {
                   )}
                 </td>
                 <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                  {p.activo ? (
-                    <Button variant="ghost" size="sm" onClick={() => onBorrar(p)}>
-                      <Trash2 size={14} />
-                    </Button>
-                  ) : (
-                    <Button variant="ghost" size="sm" onClick={() => onReactivar(p)}>
-                      <RotateCcw size={14} />
-                    </Button>
-                  )}
+                  {editar &&
+                    (p.activo ? (
+                      <Button variant="ghost" size="sm" onClick={() => onBorrar(p)}>
+                        <Trash2 size={14} />
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="sm" onClick={() => onReactivar(p)}>
+                        <RotateCcw size={14} />
+                      </Button>
+                    ))}
                 </td>
               </tr>
             ))}

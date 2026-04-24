@@ -12,33 +12,36 @@ import {
   Gavel,
   Building2,
   Briefcase,
+  ShieldCheck,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/lib/auth';
 
 const nav = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/empleados', label: 'Empleados', icon: Users },
-  { to: '/sucursales', label: 'Sucursales / Obras', icon: Building2 },
-  { to: '/puestos', label: 'Puestos', icon: Briefcase },
-  { to: '/horarios', label: 'Horarios', icon: Clock },
-  { to: '/asistencia', label: 'Asistencia', icon: CalendarClock },
-  { to: '/incidencias', label: 'Incidencias', icon: AlertCircle },
-  { to: '/actas', label: 'Actas', icon: Gavel },
-  { to: '/nomina', label: 'Nómina', icon: DollarSign },
-  { to: '/documentos', label: 'Documentos', icon: FileText },
-  { to: '/reportes', label: 'Reportes', icon: BarChart3 },
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, modulo: null },
+  { to: '/empleados', label: 'Empleados', icon: Users, modulo: 'empleados' },
+  { to: '/sucursales', label: 'Sucursales / Obras', icon: Building2, modulo: 'sucursales' },
+  { to: '/puestos', label: 'Puestos', icon: Briefcase, modulo: 'puestos' },
+  { to: '/horarios', label: 'Horarios', icon: Clock, modulo: 'horarios' },
+  { to: '/asistencia', label: 'Asistencia', icon: CalendarClock, modulo: 'asistencia' },
+  { to: '/incidencias', label: 'Incidencias', icon: AlertCircle, modulo: 'incidencias' },
+  { to: '/actas', label: 'Actas', icon: Gavel, modulo: 'actas' },
+  { to: '/nomina', label: 'Nómina', icon: DollarSign, modulo: 'nomina' },
+  { to: '/documentos', label: 'Documentos', icon: FileText, modulo: 'documentos' },
+  { to: '/reportes', label: 'Reportes', icon: BarChart3, modulo: 'reportes' },
+  { to: '/usuarios', label: 'Usuarios', icon: ShieldCheck, modulo: 'usuarios' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const { user, rol, signOut } = useAuth();
+  const { user, rol, signOut, puedeVer } = useAuth();
+  const visibles = nav.filter((n) => n.modulo === null || puedeVer(n.modulo));
 
   return (
     <div className="flex h-full">
       <aside className="flex w-60 shrink-0 flex-col border-r border-slate-200 bg-white">
         <div className="px-5 py-4 text-lg font-semibold text-brand-700">Portal RRHH</div>
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2">
-          {nav.map(({ to, label, icon: Icon }) => (
+          {visibles.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}

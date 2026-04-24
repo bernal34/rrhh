@@ -3,6 +3,7 @@ import { Plus, Trash2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/lib/auth';
 import {
   Sucursal,
   deleteSucursal,
@@ -12,6 +13,8 @@ import {
 } from '@/services/catalogosService';
 
 export default function SucursalesList() {
+  const { puedeEditar } = useAuth();
+  const editar = puedeEditar('sucursales');
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [loading, setLoading] = useState(true);
   const [verInactivas, setVerInactivas] = useState(false);
@@ -54,14 +57,16 @@ export default function SucursalesList() {
             />
             Mostrar inactivas
           </label>
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setOpen(true);
-            }}
-          >
-            <Plus size={16} /> Nueva sucursal
-          </Button>
+          {editar && (
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setOpen(true);
+              }}
+            >
+              <Plus size={16} /> Nueva sucursal
+            </Button>
+          )}
         </div>
       </div>
 
@@ -94,8 +99,11 @@ export default function SucursalesList() {
             {sucursales.map((s) => (
               <tr
                 key={s.id}
-                className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
+                className={`border-t border-slate-100 ${
+                  editar ? 'cursor-pointer hover:bg-slate-50' : ''
+                }`}
                 onClick={() => {
+                  if (!editar) return;
                   setEditing(s);
                   setOpen(true);
                 }}
@@ -115,15 +123,16 @@ export default function SucursalesList() {
                   )}
                 </td>
                 <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                  {s.activo ? (
-                    <Button variant="ghost" size="sm" onClick={() => onBorrar(s)}>
-                      <Trash2 size={14} />
-                    </Button>
-                  ) : (
-                    <Button variant="ghost" size="sm" onClick={() => onReactivar(s)}>
-                      <RotateCcw size={14} />
-                    </Button>
-                  )}
+                  {editar &&
+                    (s.activo ? (
+                      <Button variant="ghost" size="sm" onClick={() => onBorrar(s)}>
+                        <Trash2 size={14} />
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="sm" onClick={() => onReactivar(s)}>
+                        <RotateCcw size={14} />
+                      </Button>
+                    ))}
                 </td>
               </tr>
             ))}
