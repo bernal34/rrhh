@@ -15,6 +15,7 @@ import HorariosList from './modules/horarios/HorariosList';
 import IncidenciasList from './modules/incidencias/IncidenciasList';
 import ActasList from './modules/actas/ActasList';
 import UsuariosList from './modules/usuarios/UsuariosList';
+import VacacionesPage from './modules/vacaciones/VacacionesPage';
 
 const r = (modulo: string, el: React.ReactNode) => (
   <RequireModulo modulo={modulo}>{el}</RequireModulo>
@@ -37,6 +38,7 @@ export default function App() {
                 <Route path="/horarios" element={r('horarios', <HorariosList />)} />
                 <Route path="/asistencia" element={r('asistencia', <AsistenciaList />)} />
                 <Route path="/incidencias" element={r('incidencias', <IncidenciasList />)} />
+                <Route path="/vacaciones" element={r('vacaciones', <VacacionesPage />)} />
                 <Route path="/actas" element={r('actas', <ActasList />)} />
                 <Route path="/nomina" element={r('nomina', <NominaPage />)} />
                 <Route path="/documentos" element={r('documentos', <DocumentosList />)} />

@@ -57,7 +57,7 @@ create or replace view mis_modulos as
     where user_id = auth.uid()
   union all
   select unnest(array['empleados','sucursales','puestos','horarios',
-                       'asistencia','incidencias','actas','nomina','documentos',
+                       'asistencia','incidencias','vacaciones','actas','nomina','documentos',
                        'reportes','usuarios']) as modulo,
          true as puede_editar
     where current_user_es_admin();

@@ -13,6 +13,7 @@ import {
   Building2,
   Briefcase,
   ShieldCheck,
+  Palmtree,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/lib/auth';
@@ -25,6 +26,7 @@ const nav = [
   { to: '/horarios', label: 'Horarios', icon: Clock, modulo: 'horarios' },
   { to: '/asistencia', label: 'Asistencia', icon: CalendarClock, modulo: 'asistencia' },
   { to: '/incidencias', label: 'Incidencias', icon: AlertCircle, modulo: 'incidencias' },
+  { to: '/vacaciones', label: 'Vacaciones', icon: Palmtree, modulo: 'vacaciones' },
   { to: '/actas', label: 'Actas', icon: Gavel, modulo: 'actas' },
   { to: '/nomina', label: 'Nómina', icon: DollarSign, modulo: 'nomina' },
   { to: '/documentos', label: 'Documentos', icon: FileText, modulo: 'documentos' },
