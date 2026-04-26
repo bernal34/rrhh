@@ -48,9 +48,9 @@ export async function loadDashboard(): Promise<DashboardData> {
     .select('id', { count: 'exact', head: true })
     .eq('estatus', 'activo');
 
-  // Asistencia de hoy
+  // Asistencia de hoy (usa la vista que computa el estatus)
   const { data: asis } = await supabase
-    .from('asistencia_dia')
+    .from('v_reporte_asistencia')
     .select('estatus')
     .eq('fecha', fechaHoy);
   const asistenciaHoy = { puntual: 0, retardo: 0, falta: 0, pendiente: 0 };
