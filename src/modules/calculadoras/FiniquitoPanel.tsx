@@ -36,6 +36,10 @@ function diasVacacionesLft(antiguedadAnios: number): number {
   return 32;
 }
 
+// UMA diaria 2026 (Feb 2026 - Ene 2027). Para tope de prima de antigüedad
+// se usa 2 × UMA según jurisprudencia SCJN (LFT Art. 486).
+const UMA_DIARIA_DEFAULT = 113.14;
+
 export default function FiniquitoPanel() {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [empleadoId, setEmpleadoId] = useState('');
@@ -44,6 +48,7 @@ export default function FiniquitoPanel() {
   const [sueldo, setSueldo] = useState(0);
   const [diasVacPendientes, setDiasVacPendientes] = useState(0);
   const [diasPendientes, setDiasPendientes] = useState(0);
+  const [umaDiaria, setUmaDiaria] = useState(UMA_DIARIA_DEFAULT);
 
   useEffect(() => {
     listEmpleados().then(setEmpleados);
@@ -88,7 +93,11 @@ export default function FiniquitoPanel() {
       indemn3meses = 90 * salarioDiarioIntegrado;
       prima20 = anios * 20 * salarioDiarioIntegrado;
     }
-    const primaAntiguedad = anios >= 15 || causa === 'despido_injustificado' ? anios * 12 * salarioDiarioIntegrado : 0;
+    // Prima de antigüedad (Art. 162 LFT): 12 días por año, salario topado a 2 UMA (Art. 486 LFT)
+    const tope2Uma = 2 * umaDiaria;
+    const sdiPrimaAntig = Math.min(salarioDiarioIntegrado, tope2Uma);
+    const primaAntiguedad = anios >= 15 || causa === 'despido_injustificado' ? anios * 12 * sdiPrimaAntig : 0;
+    const aplicoTope = salarioDiarioIntegrado > tope2Uma && primaAntiguedad > 0;
 
     const totalFiniquito = aguinaldoProp + vacacionesProp + primaVacacional + sueldoPendiente + vacPendientesMonto;
     const totalLiquidacion = indemn3meses + prima20 + primaAntiguedad;
@@ -99,6 +108,9 @@ export default function FiniquitoPanel() {
       dias,
       salarioDiario,
       salarioDiarioIntegrado,
+      tope2Uma,
+      sdiPrimaAntig,
+      aplicoTope,
       aguinaldoProp,
       vacacionesProp,
       primaVacacional,
@@ -111,7 +123,7 @@ export default function FiniquitoPanel() {
       totalLiquidacion,
       granTotal,
     };
-  }, [emp, fechaBaja, causa, sueldo, diasVacPendientes, diasPendientes]);
+  }, [emp, fechaBaja, causa, sueldo, diasVacPendientes, diasPendientes, umaDiaria]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -165,6 +177,14 @@ export default function FiniquitoPanel() {
           value={diasVacPendientes}
           onChange={(e) => setDiasVacPendientes(Number(e.target.value) || 0)}
         />
+        <Input
+          label="UMA diaria (tope 2 UMA = prima antigüedad)"
+          type="number"
+          step="0.01"
+          min={0}
+          value={umaDiaria}
+          onChange={(e) => setUmaDiaria(Number(e.target.value) || UMA_DIARIA_DEFAULT)}
+        />
       </div>
 
       {calc && emp && (
@@ -190,7 +210,16 @@ export default function FiniquitoPanel() {
             </h3>
             <Linea label="Indemnización 3 meses (90 días SDI)" valor={calc.indemn3meses} />
             <Linea label="20 días por año de servicio (SDI)" valor={calc.prima20} />
-            <Linea label="Prima de antigüedad (12 días/año, máx. 2 SMG)" valor={calc.primaAntiguedad} />
+            <Linea
+              label={`Prima de antigüedad (12 días/año${calc.aplicoTope ? `, topado a 2 UMA = ${fmt.format(calc.tope2Uma)}` : ''})`}
+              valor={calc.primaAntiguedad}
+            />
+            {calc.aplicoTope && (
+              <div className="text-xs text-amber-700 mt-1">
+                ⚠️ El SDI ({fmt.format(calc.salarioDiarioIntegrado)}) excede 2 UMA. La prima de
+                antigüedad se calcula con el tope legal de {fmt.format(calc.tope2Uma)} (Art. 486 LFT).
+              </div>
+            )}
             <div className="mt-3 flex justify-between border-t border-slate-200 pt-3 font-semibold">
               <span>Subtotal liquidación</span>
               <span className="tabular-nums">{fmt.format(calc.totalLiquidacion)}</span>

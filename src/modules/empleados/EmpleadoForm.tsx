@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Tabs } from '@/components/ui/Tabs';
 import { useCatalogos } from '@/hooks/useCatalogos';
 import { Empresa, listEmpresas } from '@/services/empresasService';
+import { listEmpleados } from '@/services/empleadosService';
 import {
   Empleado,
   getHikMapping,
@@ -80,6 +81,7 @@ export default function EmpleadoForm({ open, onClose, empleado, onSaved }: Props
   const [syncingFoto, setSyncingFoto] = useState(false);
   const [grupos, setGrupos] = useState<GrupoHorario[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [posiblesJefes, setPosiblesJefes] = useState<Empleado[]>([]);
   const [grupoActual, setGrupoActual] = useState<string>('');
   const [grupoInicial, setGrupoInicial] = useState<string>('');
 
@@ -92,6 +94,9 @@ export default function EmpleadoForm({ open, onClose, empleado, onSaved }: Props
     setGrupoInicial('');
     listGrupos(true).then(setGrupos);
     listEmpresas(true).then(setEmpresas).catch(() => setEmpresas([]));
+    listEmpleados({ estatus: 'activo' })
+      .then((emps) => setPosiblesJefes(emps.filter((e) => e.id !== empleado?.id)))
+      .catch(() => setPosiblesJefes([]));
 
     if (empleado?.id) {
       getHikMapping(empleado.id).then((m) => setHikPersonId(m?.hik_person_id ?? null));
@@ -257,7 +262,16 @@ export default function EmpleadoForm({ open, onClose, empleado, onSaved }: Props
           placeholder="Sin asignar"
           value={grupoActual}
           onChange={(e) => setGrupoActual(e.target.value)}
-          className="md:col-span-2"
+        />
+        <Select
+          label="Jefe directo"
+          options={posiblesJefes.map((j) => ({
+            value: j.id,
+            label: `${j.nombre} ${j.apellido_paterno ?? ''}`.trim(),
+          }))}
+          placeholder="Sin jefe asignado"
+          value={form.jefe_id ?? ''}
+          onChange={(e) => set('jefe_id', e.target.value || null)}
         />
       </Section>
 
