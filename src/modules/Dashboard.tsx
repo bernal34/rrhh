@@ -32,39 +32,19 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Vista general de tu organización · {new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+      </div>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <KpiCard
-          icon={<Users size={20} />}
-          title="Empleados activos"
-          value={String(data.empleadosActivos)}
-          color="text-brand-700"
-        />
-        <KpiCard
-          icon={<CheckCircle size={20} />}
-          title="Puntuales hoy"
-          value={String(data.asistenciaHoy.puntual)}
-          color="text-green-700"
-        />
-        <KpiCard
-          icon={<Clock size={20} />}
-          title="Retardos hoy"
-          value={String(data.asistenciaHoy.retardo)}
-          color="text-yellow-700"
-        />
-        <KpiCard
-          icon={<XCircle size={20} />}
-          title="Faltas hoy"
-          value={String(data.asistenciaHoy.falta)}
-          color="text-red-700"
-        />
-        <KpiCard
-          icon={<HelpCircle size={20} />}
-          title="Pendientes hoy"
-          value={String(data.asistenciaHoy.pendiente)}
-          color="text-blue-700"
-        />
+        <KpiCard icon={<Users size={18} />} title="Empleados activos" value={String(data.empleadosActivos)} tone="brand" />
+        <KpiCard icon={<CheckCircle size={18} />} title="Puntuales hoy" value={String(data.asistenciaHoy.puntual)} tone="green" />
+        <KpiCard icon={<Clock size={18} />} title="Retardos hoy" value={String(data.asistenciaHoy.retardo)} tone="yellow" />
+        <KpiCard icon={<XCircle size={18} />} title="Faltas hoy" value={String(data.asistenciaHoy.falta)} tone="red" />
+        <KpiCard icon={<HelpCircle size={18} />} title="Pendientes hoy" value={String(data.asistenciaHoy.pendiente)} tone="blue" />
       </section>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -160,24 +140,29 @@ export default function Dashboard() {
   );
 }
 
-function KpiCard({
-  icon,
-  title,
-  value,
-  color,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  value: string;
-  color: string;
-}) {
+type Tone = 'brand' | 'green' | 'yellow' | 'red' | 'blue';
+
+const toneClasses: Record<Tone, { bg: string; icon: string; value: string }> = {
+  brand:  { bg: 'bg-brand-50',  icon: 'text-brand-600',  value: 'text-slate-900' },
+  green:  { bg: 'bg-green-50',  icon: 'text-green-600',  value: 'text-slate-900' },
+  yellow: { bg: 'bg-yellow-50', icon: 'text-yellow-600', value: 'text-slate-900' },
+  red:    { bg: 'bg-red-50',    icon: 'text-red-600',    value: 'text-slate-900' },
+  blue:   { bg: 'bg-blue-50',   icon: 'text-blue-600',   value: 'text-slate-900' },
+};
+
+function KpiCard({ icon, title, value, tone }: { icon: React.ReactNode; title: string; value: string; tone: Tone }) {
+  const c = toneClasses[tone];
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="flex items-center justify-between text-slate-500">
-        <span className="text-sm">{title}</span>
-        <span className={color}>{icon}</span>
+    <div className="group rounded-lg border border-slate-200 bg-white p-4 shadow-soft transition-all hover:shadow-card hover:-translate-y-0.5">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="text-xs font-medium uppercase tracking-wider text-slate-500">{title}</div>
+          <div className={`mt-2 text-3xl font-bold tabular-nums ${c.value}`}>{value}</div>
+        </div>
+        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${c.bg} ${c.icon}`}>
+          {icon}
+        </div>
       </div>
-      <div className={`mt-1 text-2xl font-semibold ${color}`}>{value}</div>
     </div>
   );
 }
@@ -196,7 +181,7 @@ function Panel({
   const arr = Array.isArray(children) ? children : [children];
   const isEmpty = !arr || arr.length === 0 || arr.every((c) => c === false || c == null);
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
+    <div className="rounded-lg border border-slate-200 bg-white shadow-soft">
       <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
         {icon}
         <h2 className="text-sm font-semibold text-slate-800">{title}</h2>

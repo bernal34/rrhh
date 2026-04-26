@@ -25,75 +25,153 @@ import clsx from 'clsx';
 import { useAuth } from '@/lib/auth';
 import GlobalSearch from './GlobalSearch';
 
-const nav = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, modulo: null },
-  { to: '/empleados', label: 'Empleados', icon: Users, modulo: 'empleados' },
-  { to: '/empresas', label: 'Empresas', icon: Building2, modulo: 'empresas' },
-  { to: '/sucursales', label: 'Sucursales / Obras', icon: Building2, modulo: 'sucursales' },
-  { to: '/puestos', label: 'Puestos', icon: Briefcase, modulo: 'puestos' },
-  { to: '/horarios', label: 'Horarios', icon: Clock, modulo: 'horarios' },
-  { to: '/asistencia', label: 'Asistencia', icon: CalendarClock, modulo: 'asistencia' },
-  { to: '/incidencias', label: 'Incidencias', icon: AlertCircle, modulo: 'incidencias' },
-  { to: '/vacaciones', label: 'Vacaciones', icon: Palmtree, modulo: 'vacaciones' },
-  { to: '/calendario', label: 'Calendario', icon: Calendar, modulo: 'calendario' },
-  { to: '/onboarding', label: 'Onboarding', icon: ClipboardCheck, modulo: 'onboarding' },
-  { to: '/capacitacion', label: 'Capacitación', icon: GraduationCap, modulo: 'capacitacion' },
-  { to: '/calculadoras', label: 'Calculadoras', icon: Calculator, modulo: 'calculadoras' },
-  { to: '/organigrama', label: 'Organigrama', icon: Network, modulo: 'organigrama' },
-  { to: '/auditoria', label: 'Auditoría', icon: Activity, modulo: 'auditoria' },
-  { to: '/actas', label: 'Actas', icon: Gavel, modulo: 'actas' },
-  { to: '/nomina', label: 'Nómina', icon: DollarSign, modulo: 'nomina' },
-  { to: '/documentos', label: 'Documentos', icon: FileText, modulo: 'documentos' },
-  { to: '/reportes', label: 'Reportes', icon: BarChart3, modulo: 'reportes' },
-  { to: '/usuarios', label: 'Usuarios', icon: ShieldCheck, modulo: 'usuarios' },
+type NavItem = { to: string; label: string; icon: typeof Users; modulo: string | null };
+type NavGroup = { title: string | null; items: NavItem[] };
+
+const navGroups: NavGroup[] = [
+  {
+    title: null,
+    items: [{ to: '/', label: 'Dashboard', icon: LayoutDashboard, modulo: null }],
+  },
+  {
+    title: 'Operación',
+    items: [
+      { to: '/empleados', label: 'Empleados', icon: Users, modulo: 'empleados' },
+      { to: '/asistencia', label: 'Asistencia', icon: CalendarClock, modulo: 'asistencia' },
+      { to: '/incidencias', label: 'Incidencias', icon: AlertCircle, modulo: 'incidencias' },
+      { to: '/vacaciones', label: 'Vacaciones', icon: Palmtree, modulo: 'vacaciones' },
+      { to: '/calendario', label: 'Calendario', icon: Calendar, modulo: 'calendario' },
+      { to: '/actas', label: 'Actas', icon: Gavel, modulo: 'actas' },
+    ],
+  },
+  {
+    title: 'Procesos',
+    items: [
+      { to: '/onboarding', label: 'Onboarding', icon: ClipboardCheck, modulo: 'onboarding' },
+      { to: '/capacitacion', label: 'Capacitación', icon: GraduationCap, modulo: 'capacitacion' },
+      { to: '/horarios', label: 'Horarios', icon: Clock, modulo: 'horarios' },
+    ],
+  },
+  {
+    title: 'Nómina',
+    items: [
+      { to: '/nomina', label: 'Nómina', icon: DollarSign, modulo: 'nomina' },
+      { to: '/calculadoras', label: 'Calculadoras', icon: Calculator, modulo: 'calculadoras' },
+      { to: '/documentos', label: 'Documentos', icon: FileText, modulo: 'documentos' },
+      { to: '/reportes', label: 'Reportes', icon: BarChart3, modulo: 'reportes' },
+    ],
+  },
+  {
+    title: 'Catálogos',
+    items: [
+      { to: '/empresas', label: 'Empresas', icon: Building2, modulo: 'empresas' },
+      { to: '/sucursales', label: 'Sucursales / Obras', icon: Building2, modulo: 'sucursales' },
+      { to: '/puestos', label: 'Puestos', icon: Briefcase, modulo: 'puestos' },
+      { to: '/organigrama', label: 'Organigrama', icon: Network, modulo: 'organigrama' },
+    ],
+  },
+  {
+    title: 'Administración',
+    items: [
+      { to: '/usuarios', label: 'Usuarios', icon: ShieldCheck, modulo: 'usuarios' },
+      { to: '/auditoria', label: 'Auditoría', icon: Activity, modulo: 'auditoria' },
+    ],
+  },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, rol, signOut, puedeVer } = useAuth();
-  const visibles = nav.filter((n) => n.modulo === null || puedeVer(n.modulo));
+
+  const visibleGroups = navGroups
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((n) => n.modulo === null || puedeVer(n.modulo)),
+    }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <div className="flex h-full">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-slate-200 bg-white">
-        <div className="px-5 py-4 text-lg font-semibold text-brand-700">Portal RRHH</div>
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2">
-          {visibles.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) =>
-                clsx(
-                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm',
-                  isActive
-                    ? 'bg-brand-50 text-brand-700 font-medium'
-                    : 'text-slate-600 hover:bg-slate-50',
-                )
-              }
-            >
-              <Icon size={18} />
-              {label}
-            </NavLink>
+      <aside className="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
+        <div className="border-b border-slate-100 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-600 text-white">
+              <Users size={18} />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-slate-800 leading-tight">Portal RRHH</div>
+              <div className="text-[10px] uppercase tracking-wider text-slate-400">
+                Gestión de personal
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-2 py-3">
+          {visibleGroups.map((g, gi) => (
+            <div key={gi}>
+              {g.title && (
+                <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  {g.title}
+                </div>
+              )}
+              <div className="flex flex-col gap-0.5">
+                {g.items.map(({ to, label, icon: Icon }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={to === '/'}
+                    className={({ isActive }) =>
+                      clsx(
+                        'group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                        isActive
+                          ? 'bg-brand-50 text-brand-700 font-medium'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                      )
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Icon
+                          size={16}
+                          className={isActive ? 'text-brand-600' : 'text-slate-400 group-hover:text-slate-600'}
+                        />
+                        {label}
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
-        <div className="border-t border-slate-200 p-3 text-sm">
-          <div className="mb-2">
-            <div className="truncate font-medium text-slate-700">{user?.email}</div>
-            <div className="text-xs text-slate-500">{rol ?? 'sin rol'}</div>
+
+        <div className="border-t border-slate-100 p-3">
+          <div className="flex items-center gap-2 rounded-md bg-slate-50 px-2.5 py-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white">
+              {user?.email?.[0]?.toUpperCase() ?? '?'}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-xs font-medium text-slate-700">{user?.email}</div>
+              <div className="text-[10px] uppercase tracking-wider text-slate-500">
+                {rol ?? 'sin rol'}
+              </div>
+            </div>
+            <button
+              onClick={signOut}
+              className="rounded p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+              title="Cerrar sesión"
+            >
+              <LogOut size={14} />
+            </button>
           </div>
-          <button
-            onClick={signOut}
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-slate-600 hover:bg-slate-100"
-          >
-            <LogOut size={16} /> Cerrar sesión
-          </button>
         </div>
       </aside>
+
       <main className="flex flex-1 flex-col overflow-hidden">
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
           <GlobalSearch />
         </header>
-        <div className="flex-1 overflow-auto p-6">{children}</div>
+        <div className="flex-1 overflow-auto p-6 animate-fade-in">{children}</div>
       </main>
     </div>
   );
