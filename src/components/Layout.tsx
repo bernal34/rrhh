@@ -30,6 +30,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import GlobalSearch from './GlobalSearch';
+import { getToneFor } from '@/lib/moduloColors';
 
 type EmpresaHdr = { razon_social: string; logo_url: string | null };
 
@@ -163,31 +164,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               )}
               <div className="flex flex-col gap-0.5">
-                {g.items.map(({ to, label, icon: Icon }) => (
-                  <NavLink
-                    key={to}
-                    to={to}
-                    end={to === '/'}
-                    className={({ isActive }) =>
-                      clsx(
-                        'group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                        isActive
-                          ? 'bg-brand-50 text-brand-700 font-medium'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
-                      )
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <Icon
-                          size={16}
-                          className={isActive ? 'text-brand-600' : 'text-slate-400 group-hover:text-slate-600'}
-                        />
-                        {label}
-                      </>
-                    )}
-                  </NavLink>
-                ))}
+                {g.items.map(({ to, label, icon: Icon, modulo }) => {
+                  const tone = getToneFor(modulo);
+                  return (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      end={to === '/'}
+                      className={({ isActive }) =>
+                        clsx(
+                          'group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                          isActive
+                            ? `${tone.activeBg} ${tone.activeText} font-medium`
+                            : `text-slate-600 ${tone.hoverBg} hover:text-slate-900`,
+                        )
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <Icon size={16} className={isActive ? tone.iconActive : tone.icon} />
+                          {label}
+                        </>
+                      )}
+                    </NavLink>
+                  );
+                })}
               </div>
             </div>
           ))}

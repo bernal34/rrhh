@@ -18,10 +18,17 @@ import {
 } from '@/services/checklistService';
 import { Empleado, listEmpleados } from '@/services/empleadosService';
 
+import PageHeader from '@/components/PageHeader';
+
 export default function OnboardingPage() {
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Onboarding / Offboarding</h1>
+      <PageHeader
+        modulo="onboarding"
+        icon={ClipboardCheck}
+        title="Onboarding / Offboarding"
+        subtitle="Checklists para incorporación y salida de empleados"
+      />
       <Tabs
         tabs={[
           {

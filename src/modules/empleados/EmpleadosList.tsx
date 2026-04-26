@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Download, FileText, FileSignature, List, LayoutGrid, FileDown } from 'lucide-react';
+import { Plus, Search, Download, FileText, FileSignature, List, LayoutGrid, FileDown, Users } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 import { abrirConstanciaLaboral } from '@/lib/constancia';
 import { abrirContrato } from '@/lib/contrato';
 import { resolverEmpresaParaPdf, pdfFooterHTML, pdfHeaderHTML } from '@/lib/pdfHeader';
@@ -175,13 +176,14 @@ ${pdfFooterHTML(empresa)}
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Empleados</h1>
-          <p className="text-sm text-slate-500 mt-0.5">{data.length} registros</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-md border border-slate-300 bg-white p-0.5">
+      <PageHeader
+        modulo="empleados"
+        icon={Users}
+        title="Empleados"
+        subtitle={`${data.length} registros`}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex rounded-md border border-slate-300 bg-white p-0.5">
             <button
               onClick={() => cambiarVista('lista')}
               className={`flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium ${
@@ -207,18 +209,19 @@ ${pdfFooterHTML(empresa)}
           <Button variant="secondary" size="sm" onClick={descargarPDF} disabled={data.length === 0}>
             <FileText size={14} /> PDF
           </Button>
-          {editar && (
-            <>
-              <Button variant="secondary" onClick={onImportar} loading={importing}>
-                <Download size={16} /> Importar desde HCC
-              </Button>
-              <Button onClick={onNuevo}>
-                <Plus size={16} /> Nuevo empleado
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+            {editar && (
+              <>
+                <Button variant="secondary" onClick={onImportar} loading={importing}>
+                  <Download size={16} /> Importar desde HCC
+                </Button>
+                <Button onClick={onNuevo}>
+                  <Plus size={16} /> Nuevo empleado
+                </Button>
+              </>
+            )}
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-4">
         <div className="relative md:col-span-2">
