@@ -78,6 +78,25 @@ export async function setRol(userId: string, rol: 'admin_rh' | 'gerente' | 'empl
   if (error) throw error;
 }
 
+export async function crearUsuario(args: {
+  email: string;
+  password: string;
+  rol: 'admin_rh' | 'gerente' | 'empleado';
+}) {
+  const { data, error } = await supabase.functions.invoke('admin-crear-usuario', { body: args });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data as { user_id: string; email: string; rol: string };
+}
+
+export async function eliminarUsuario(userId: string) {
+  const { data, error } = await supabase.functions.invoke('admin-eliminar-usuario', {
+    body: { user_id: userId },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+}
+
 export type AccesoNivel = 'sin' | 'lectura' | 'edicion';
 
 export async function setPermiso(userId: string, modulo: string, nivel: AccesoNivel) {

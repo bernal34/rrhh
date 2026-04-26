@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
+import { FormEvent, useEffect, useState } from 'react';
+import { ShieldCheck, Plus, Trash2, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { Modal } from '@/components/ui/Modal';
 import {
   AccesoNivel,
   MODULOS,
   MODULO_LABEL,
   Modulo,
   UsuarioAdmin,
+  crearUsuario,
+  eliminarUsuario,
   listUsuarios,
   setPermiso,
   setRol,
@@ -28,6 +34,17 @@ export default function UsuariosList() {
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [openCrear, setOpenCrear] = useState(false);
+
+  async function onEliminar(u: UsuarioAdmin) {
+    if (!confirm(`¿Eliminar PERMANENTEMENTE al usuario ${u.email}? Esta acción no se puede deshacer.`)) return;
+    try {
+      await eliminarUsuario(u.id);
+      await load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Error');
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -73,11 +90,22 @@ export default function UsuariosList() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Usuarios y permisos</h1>
-        <div className="flex items-center gap-2 text-sm text-slate-500">
-          <ShieldCheck size={16} className="text-brand-600" />
-          Los usuarios con rol <b className="mx-1">Admin RH</b> tienen acceso total automático.
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+            <ShieldCheck className="text-brand-600" /> Usuarios y permisos
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Los usuarios con rol <b>Admin RH</b> tienen acceso total automático.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={load}>
+            <RefreshCw size={14} /> Refrescar
+          </Button>
+          <Button onClick={() => setOpenCrear(true)}>
+            <Plus size={16} /> Nuevo usuario
+          </Button>
         </div>
       </div>
 
@@ -87,25 +115,13 @@ export default function UsuariosList() {
         </div>
       )}
 
-      <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
-        Para crear nuevos usuarios usa{' '}
-        <a
-          className="font-medium underline"
-          href="https://supabase.com/dashboard/project/_/auth/users"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Supabase → Authentication → Users → Add user
-        </a>
-        . Luego aparecerán aquí para asignarles rol y permisos.
-      </div>
-
       <div className="overflow-auto rounded-lg border border-slate-200 bg-white">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-600">
             <tr>
               <th className="sticky left-0 z-10 bg-slate-50 px-3 py-2">Usuario</th>
               <th className="px-3 py-2">Rol</th>
+              <th className="px-3 py-2"></th>
               {MODULOS.map((m) => (
                 <th key={m} className="px-3 py-2 text-center">
                   {MODULO_LABEL[m]}
@@ -116,14 +132,14 @@ export default function UsuariosList() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={2 + MODULOS.length} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={3 + MODULOS.length} className="px-4 py-6 text-center text-slate-500">
                   Cargando…
                 </td>
               </tr>
             )}
             {!loading && usuarios.length === 0 && (
               <tr>
-                <td colSpan={2 + MODULOS.length} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={3 + MODULOS.length} className="px-4 py-6 text-center text-slate-500">
                   Sin usuarios.
                 </td>
               </tr>
@@ -155,6 +171,15 @@ export default function UsuariosList() {
                         </option>
                       ))}
                     </select>
+                  </td>
+                  <td className="px-2 py-2 align-top">
+                    <button
+                      onClick={() => onEliminar(u)}
+                      title="Eliminar usuario"
+                      className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </td>
                   {MODULOS.map((mod) => {
                     const nivel = esAdmin ? 'edicion' : nivelDe(u, mod);
@@ -193,6 +218,115 @@ export default function UsuariosList() {
           </tbody>
         </table>
       </div>
+
+      <CrearUsuarioModal
+        open={openCrear}
+        onClose={() => setOpenCrear(false)}
+        onCreated={() => {
+          setOpenCrear(false);
+          void load();
+        }}
+      />
     </div>
+  );
+}
+
+function CrearUsuarioModal({
+  open,
+  onClose,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rol, setRol] = useState<'admin_rh' | 'gerente' | 'empleado'>('empleado');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setEmail('');
+      setPassword(generaPassword());
+      setRol('empleado');
+      setErr(null);
+    }
+  }, [open]);
+
+  function generaPassword() {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    let p = '';
+    for (let i = 0; i < 10; i++) p += chars[Math.floor(Math.random() * chars.length)];
+    return p + '!';
+  }
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setErr(null);
+    try {
+      await crearUsuario({ email, password, rol });
+      onCreated();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Crear nuevo usuario">
+      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+          El usuario se crea con email <b>auto-confirmado</b>, listo para entrar al portal.
+          Después podrás vincularlo a su ficha de empleado desde Empleados → Cuenta de portal asociada.
+        </div>
+        <Input
+          label="Email *"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="empleado@empresa.com"
+        />
+        <div className="flex items-end gap-2">
+          <Input
+            label="Contraseña inicial *"
+            type="text"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="flex-1"
+          />
+          <Button type="button" variant="secondary" size="sm" onClick={() => setPassword(generaPassword())}>
+            Regenerar
+          </Button>
+        </div>
+        <div className="text-xs text-slate-500">
+          Comparte esta contraseña con el usuario; podrá cambiarla al iniciar sesión.
+        </div>
+        <Select
+          label="Rol"
+          options={[
+            { value: 'empleado', label: 'Empleado (solo Mi portal)' },
+            { value: 'gerente', label: 'Gerente (módulos asignables)' },
+            { value: 'admin_rh', label: 'Admin RH (acceso total)' },
+          ]}
+          value={rol}
+          onChange={(e) => setRol(e.target.value as 'admin_rh' | 'gerente' | 'empleado')}
+        />
+        {err && <div className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{err}</div>}
+        <div className="flex justify-end gap-2 border-t border-slate-200 pt-3">
+          <Button variant="secondary" type="button" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" loading={saving} disabled={!email || password.length < 6}>
+            Crear usuario
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
