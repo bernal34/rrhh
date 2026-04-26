@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Download, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { supabase } from '@/lib/supabase';
-import { getEmpresaPrincipal, pdfFooterHTML, pdfHeaderHTML } from '@/lib/pdfHeader';
+import { resolverEmpresaParaPdf, pdfFooterHTML, pdfHeaderHTML } from '@/lib/pdfHeader';
+import { Empresa, listEmpresas } from '@/services/empresasService';
 
 type Row = {
   empleado_id: string;
@@ -11,6 +13,7 @@ type Row = {
   apellido_paterno: string | null;
   codigo: string | null;
   fecha_ingreso: string;
+  empresa_id: string | null;
   sueldo_mensual: number;
   salario_diario: number;
   dias_trabajados_anio: number;
@@ -21,9 +24,11 @@ type Row = {
 const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
 export default function AguinaldoPanel() {
-  const [rows, setRows] = useState<Row[]>([]);
+  const [allRows, setAllRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [diasBase, setDiasBase] = useState(15);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [empresaId, setEmpresaId] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -32,11 +37,13 @@ export default function AguinaldoPanel() {
       .select('*')
       .order('apellido_paterno')
       .then(({ data }) => {
-        setRows((data ?? []) as Row[]);
+        setAllRows((data ?? []) as Row[]);
         setLoading(false);
       });
+    listEmpresas(true).then(setEmpresas).catch(() => setEmpresas([]));
   }, []);
 
+  const rows = empresaId ? allRows.filter((r) => r.empresa_id === empresaId) : allRows;
   const totalProp = rows.reduce((a, r) => a + Number(r.aguinaldo_proporcional), 0);
   const factor = diasBase / 15;
 
@@ -58,7 +65,7 @@ export default function AguinaldoPanel() {
   }
 
   async function pdf() {
-    const empresa = await getEmpresaPrincipal();
+    const empresa = await resolverEmpresaParaPdf(empresaId || null);
     const filas = rows
       .map(
         (r) => `<tr>
@@ -114,18 +121,23 @@ ${pdfFooterHTML(empresa)}
         tiempo trabajado. Si tu empresa paga más, ajusta abajo.
       </div>
 
-      <div className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-4">
         <Input
-          label="Días de aguinaldo (mínimo 15)"
+          label="Días aguinaldo (mín. 15)"
           type="number"
           min={15}
           value={diasBase}
           onChange={(e) => setDiasBase(Number(e.target.value) || 15)}
         />
+        <Select
+          label="Empresa"
+          options={empresas.map((e) => ({ value: e.id, label: e.razon_social }))}
+          placeholder="Todas las empresas"
+          value={empresaId}
+          onChange={(e) => setEmpresaId(e.target.value)}
+        />
         <div>
-          <div className="text-xs uppercase tracking-wide text-slate-500">
-            Total proyectado
-          </div>
+          <div className="text-xs uppercase tracking-wide text-slate-500">Total proyectado</div>
           <div className="mt-1 text-2xl font-semibold text-brand-700">
             {fmt.format(totalProp * factor)}
           </div>
