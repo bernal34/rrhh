@@ -3,10 +3,12 @@
 // Sin dependencias externas.
 
 import { supabase } from './supabase';
+import { getEmpresaById, getEmpresaPrincipal, pdfFooterHTML, pdfHeaderHTML } from './pdfHeader';
 
 type ReciboData = {
   folio: string;
   empresa: string;
+  empresa_id: string | null;
   empleado: { nombre: string; codigo: string | null; rfc: string | null; curp: string | null; nss: string | null; puesto: string | null; sucursal: string | null };
   periodo: { tipo: string; fecha_inicio: string; fecha_fin: string; fecha_pago: string | null };
   dias_trabajados: number;
@@ -36,7 +38,7 @@ export async function obtenerDatosRecibo(nominaDetalleId: string): Promise<Recib
     .from('nomina_detalle')
     .select(`
       *,
-      empleado:empleados(nombre, apellido_paterno, apellido_materno, codigo, rfc, curp, nss,
+      empleado:empleados(nombre, apellido_paterno, apellido_materno, codigo, rfc, curp, nss, empresa_id,
         puesto:puestos(nombre),
         sucursal:sucursales(nombre)),
       periodo:periodos_nomina(*),
@@ -59,9 +61,13 @@ export async function obtenerDatosRecibo(nominaDetalleId: string): Promise<Recib
     .filter((c) => !c.es_percepcion)
     .map((c) => ({ clave: c.concepto.clave, nombre: c.concepto.nombre, monto: c.monto }));
 
+  // Empresa para membrete: la del empleado o la principal
+  const empleadoEmpresaId = (emp.empresa_id as string | null) ?? null;
+
   return {
     folio: String(det.id).slice(0, 8).toUpperCase(),
     empresa: 'Mi Empresa',
+    empresa_id: empleadoEmpresaId,
     empleado: {
       nombre: [emp.nombre, emp.apellido_paterno, emp.apellido_materno].filter(Boolean).join(' '),
       codigo: (emp.codigo as string) ?? null,
@@ -89,7 +95,8 @@ export async function obtenerDatosRecibo(nominaDetalleId: string): Promise<Recib
   };
 }
 
-function htmlRecibo(r: ReciboData): string {
+async function htmlRecibo(r: ReciboData): Promise<string> {
+  const empresa = (r.empresa_id ? await getEmpresaById(r.empresa_id) : null) ?? (await getEmpresaPrincipal());
   const filasPercep = r.percepciones
     .map((c) => `<tr><td>${c.nombre}</td><td class="r">${fmt(c.monto)}</td></tr>`)
     .join('');
@@ -116,16 +123,7 @@ function htmlRecibo(r: ReciboData): string {
   @media print { body{padding:0} .no-print{display:none} }
 </style></head><body>
 
-<div style="display:flex;justify-content:space-between;align-items:end">
-  <div>
-    <h1>${r.empresa}</h1>
-    <div style="color:#64748b">Recibo de nómina</div>
-  </div>
-  <div style="text-align:right">
-    <div style="color:#64748b">Folio</div>
-    <div style="font-family:ui-monospace,Menlo,monospace;font-size:13px">${r.folio}</div>
-  </div>
-</div>
+${pdfHeaderHTML(empresa, 'Recibo de nómina', `Folio ${r.folio}`)}
 
 <div class="grid" style="margin-top:14px">
   <div class="box">
@@ -176,6 +174,8 @@ function htmlRecibo(r: ReciboData): string {
   Recibí de conformidad<br/>${r.empleado.nombre}
 </div>
 
+${pdfFooterHTML(empresa)}
+
 <div class="no-print" style="text-align:center;margin-top:20px">
   <button onclick="window.print()" style="padding:8px 16px;background:#4f46e5;color:white;border:none;border-radius:6px;cursor:pointer">Imprimir / Guardar PDF</button>
 </div>
@@ -186,7 +186,7 @@ function htmlRecibo(r: ReciboData): string {
 
 export async function abrirReciboPDF(nominaDetalleId: string) {
   const data = await obtenerDatosRecibo(nominaDetalleId);
-  const html = htmlRecibo(data);
+  const html = await htmlRecibo(data);
   const w = window.open('', '_blank');
   if (!w) {
     alert('Permite ventanas emergentes para imprimir el recibo.');

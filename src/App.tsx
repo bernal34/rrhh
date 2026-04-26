@@ -23,6 +23,9 @@ import CapacitacionPage from './modules/capacitacion/CapacitacionPage';
 import OrganigramaPage from './modules/organigrama/OrganigramaPage';
 import AuditoriaPage from './modules/auditoria/AuditoriaPage';
 import EmpresasList from './modules/empresas/EmpresasList';
+import PrestamosList from './modules/prestamos/PrestamosList';
+import Nom035Page from './modules/nom035/Nom035Page';
+import NotificacionesPage from './modules/notificaciones/NotificacionesPage';
 
 const r = (modulo: string, el: React.ReactNode) => (
   <RequireModulo modulo={modulo}>{el}</RequireModulo>
@@ -42,6 +45,9 @@ export default function App() {
                 <Route path="/empleados" element={r('empleados', <EmpleadosList />)} />
                 <Route path="/sucursales" element={r('sucursales', <SucursalesList />)} />
                 <Route path="/empresas" element={r('empresas', <EmpresasList />)} />
+                <Route path="/prestamos" element={r('prestamos', <PrestamosList />)} />
+                <Route path="/nom035" element={r('nom035', <Nom035Page />)} />
+                <Route path="/notificaciones" element={r('notificaciones', <NotificacionesPage />)} />
                 <Route path="/puestos" element={r('puestos', <PuestosList />)} />
                 <Route path="/horarios" element={r('horarios', <HorariosList />)} />
                 <Route path="/asistencia" element={r('asistencia', <AsistenciaList />)} />

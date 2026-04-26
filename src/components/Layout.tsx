@@ -20,6 +20,9 @@ import {
   ClipboardCheck,
   Network,
   Activity,
+  Bell,
+  Heart,
+  HandCoins,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
@@ -79,6 +82,7 @@ const navGroups: NavGroup[] = [
       { to: '/vacaciones', label: 'Vacaciones', icon: Palmtree, modulo: 'vacaciones' },
       { to: '/calendario', label: 'Calendario', icon: Calendar, modulo: 'calendario' },
       { to: '/actas', label: 'Actas', icon: Gavel, modulo: 'actas' },
+      { to: '/notificaciones', label: 'Notificaciones', icon: Bell, modulo: 'notificaciones' },
     ],
   },
   {
@@ -87,6 +91,7 @@ const navGroups: NavGroup[] = [
       { to: '/onboarding', label: 'Onboarding', icon: ClipboardCheck, modulo: 'onboarding' },
       { to: '/capacitacion', label: 'Capacitación', icon: GraduationCap, modulo: 'capacitacion' },
       { to: '/horarios', label: 'Horarios', icon: Clock, modulo: 'horarios' },
+      { to: '/nom035', label: 'NOM-035', icon: Heart, modulo: 'nom035' },
     ],
   },
   {
@@ -94,6 +99,7 @@ const navGroups: NavGroup[] = [
     items: [
       { to: '/nomina', label: 'Nómina', icon: DollarSign, modulo: 'nomina' },
       { to: '/calculadoras', label: 'Calculadoras', icon: Calculator, modulo: 'calculadoras' },
+      { to: '/prestamos', label: 'Préstamos', icon: HandCoins, modulo: 'prestamos' },
       { to: '/documentos', label: 'Documentos', icon: FileText, modulo: 'documentos' },
       { to: '/reportes', label: 'Reportes', icon: BarChart3, modulo: 'reportes' },
     ],

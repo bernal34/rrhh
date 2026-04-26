@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Download, FileText } from 'lucide-react';
+import { RefreshCw, Download, FileText, Upload } from 'lucide-react';
+import ImportadorCsv from './ImportadorCsv';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -41,6 +42,7 @@ export default function AsistenciaList() {
   const [empleadoEmpresaMap, setEmpleadoEmpresaMap] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(false);
   const [recalc, setRecalc] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   async function cargar() {
     setLoading(true);
@@ -160,9 +162,14 @@ ${pdfFooterHTML(empresa)}
         <h1 className="text-2xl font-semibold">Asistencia</h1>
         <div className="flex gap-2">
           {editar && (
-            <Button variant="secondary" onClick={onRecalcular} loading={recalc}>
-              <RefreshCw size={16} /> Recalcular rango
-            </Button>
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
+                <Upload size={14} /> Importar CSV
+              </Button>
+              <Button variant="secondary" onClick={onRecalcular} loading={recalc}>
+                <RefreshCw size={16} /> Recalcular rango
+              </Button>
+            </>
           )}
           <Button
             variant="secondary"
@@ -281,6 +288,8 @@ ${pdfFooterHTML(empresa)}
           </tbody>
         </table>
       </div>
+
+      <ImportadorCsv open={importOpen} onClose={() => setImportOpen(false)} onDone={cargar} />
     </div>
   );
 }

@@ -22,6 +22,9 @@ export const MODULOS = [
   'calculadoras',
   'organigrama',
   'auditoria',
+  'prestamos',
+  'nom035',
+  'notificaciones',
 ] as const;
 
 export type Modulo = (typeof MODULOS)[number];
@@ -46,6 +49,9 @@ export const MODULO_LABEL: Record<Modulo, string> = {
   calculadoras: 'Calculadoras',
   organigrama: 'Organigrama',
   auditoria: 'Auditoría',
+  prestamos: 'Préstamos',
+  nom035: 'NOM-035',
+  notificaciones: 'Notificaciones',
 };
 
 export type PermisoModulo = { modulo: string; puede_editar: boolean };
