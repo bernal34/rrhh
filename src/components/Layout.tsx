@@ -32,15 +32,20 @@ type EmpresaHdr = { razon_social: string; logo_url: string | null };
 function useEmpresaHeader() {
   const [emp, setEmp] = useState<EmpresaHdr | null>(null);
   useEffect(() => {
-    supabase
-      .from('empresas')
-      .select('razon_social, logo_url')
-      .eq('activo', true)
-      .order('razon_social')
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }: any) => setEmp(data ?? null))
-      .catch(() => setEmp(null));
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('empresas')
+          .select('razon_social, logo_url')
+          .eq('activo', true)
+          .order('razon_social')
+          .limit(1)
+          .maybeSingle();
+        setEmp((data as EmpresaHdr | null) ?? null);
+      } catch {
+        setEmp(null);
+      }
+    })();
   }, []);
   return emp;
 }
