@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, X, FileText, Send, Plus } from 'lucide-react';
+import { Check, X, FileText, Send, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -12,6 +12,7 @@ import {
   autorizarPrenomina,
   cancelarPrenomina,
   crearPeriodo,
+  eliminarPrenomina,
   enviarARevision,
   generarPrenomina,
   listPeriodos,
@@ -159,11 +160,34 @@ export default function NominaList() {
                               const m = prompt('Motivo de cancelación:');
                               if (m) accion(() => cancelarPrenomina(p.id, m));
                             }}
+                            title="Cancelar"
                           >
                             <X size={14} />
                           </Button>
                         </>
                       )}
+                    {editar && p.estatus !== 'autorizada' && p.estatus !== 'convertida' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (
+                            confirm(
+                              `¿Eliminar PERMANENTEMENTE la prenómina del periodo ${
+                                p.periodo
+                                  ? `${p.periodo.fecha_inicio} → ${p.periodo.fecha_fin}`
+                                  : ''
+                              }? Esta acción borra todos sus detalles y no se puede deshacer.`,
+                            )
+                          ) {
+                            accion(() => eliminarPrenomina(p.id));
+                          }
+                        }}
+                        title="Eliminar prenómina"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    )}
                   </div>
                 </td>
               </tr>

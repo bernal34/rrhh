@@ -64,6 +64,31 @@ export async function listPrenominas() {
   return data as Prenomina[];
 }
 
+export async function eliminarPrenomina(prenominaId: string) {
+  // Borra detalles + conceptos aplicados + la prenómina misma.
+  // No permite si está autorizada/convertida (lo valida el backend con RLS,
+  // y de cualquier modo es una mala idea).
+  const { data: pre } = await supabase
+    .from('prenomina')
+    .select('estatus')
+    .eq('id', prenominaId)
+    .maybeSingle();
+  if (pre && (pre.estatus === 'autorizada' || pre.estatus === 'convertida')) {
+    throw new Error('No se puede eliminar una prenómina autorizada o convertida. Cancélala primero si aplica.');
+  }
+  const { data: detalles } = await supabase
+    .from('nomina_detalle')
+    .select('id')
+    .eq('prenomina_id', prenominaId);
+  const ids = (detalles ?? []).map((d: any) => d.id);
+  if (ids.length > 0) {
+    await supabase.from('nomina_conceptos_aplicados').delete().in('nomina_detalle_id', ids);
+    await supabase.from('nomina_detalle').delete().eq('prenomina_id', prenominaId);
+  }
+  const { error } = await supabase.from('prenomina').delete().eq('id', prenominaId);
+  if (error) throw error;
+}
+
 export async function generarPrenomina(periodoId: string, sucursalId?: string) {
   const { data, error } = await supabase.rpc('fn_generar_prenomina', {
     p_periodo_id: periodoId,
