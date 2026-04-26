@@ -22,8 +22,28 @@ import {
   Activity,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 import GlobalSearch from './GlobalSearch';
+
+type EmpresaHdr = { razon_social: string; logo_url: string | null };
+
+function useEmpresaHeader() {
+  const [emp, setEmp] = useState<EmpresaHdr | null>(null);
+  useEffect(() => {
+    supabase
+      .from('empresas')
+      .select('razon_social, logo_url')
+      .eq('activo', true)
+      .order('razon_social')
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }: any) => setEmp(data ?? null))
+      .catch(() => setEmp(null));
+  }, []);
+  return emp;
+}
 
 type NavItem = { to: string; label: string; icon: typeof Users; modulo: string | null };
 type NavGroup = { title: string | null; items: NavItem[] };
@@ -81,6 +101,7 @@ const navGroups: NavGroup[] = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, rol, signOut, puedeVer } = useAuth();
+  const empresa = useEmpresaHeader();
 
   const visibleGroups = navGroups
     .map((g) => ({
@@ -168,7 +189,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+        <header className="flex items-center justify-between gap-6 border-b border-slate-200 bg-white px-6 py-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {empresa?.logo_url ? (
+              <img
+                src={empresa.logo_url}
+                alt={empresa.razon_social}
+                className="h-9 max-w-[180px] object-contain"
+              />
+            ) : (
+              <div className="flex h-9 items-center rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 text-xs text-slate-400">
+                Sube el logo en Empresas
+              </div>
+            )}
+            {empresa?.razon_social && (
+              <div className="hidden text-sm font-semibold text-slate-700 md:block">
+                {empresa.razon_social}
+              </div>
+            )}
+          </div>
           <GlobalSearch />
         </header>
         <div className="flex-1 overflow-auto p-6 animate-fade-in">{children}</div>

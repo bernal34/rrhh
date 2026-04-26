@@ -10,7 +10,9 @@ import {
   listEmpresas,
   reactivarEmpresa,
   upsertEmpresa,
+  uploadLogo,
 } from '@/services/empresasService';
+import { supabase } from '@/lib/supabase';
 
 export default function EmpresasList() {
   const { puedeEditar } = useAuth();
@@ -176,6 +178,8 @@ function EmpresaForm({
   const [form, setForm] = useState<Partial<Empresa>>({});
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -185,16 +189,47 @@ function EmpresaForm({
           activo: true,
         },
       );
+      setLogoFile(null);
+      setLogoPreview(empresa?.logo_url ?? null);
       setErr(null);
     }
   }, [open, empresa]);
+
+  function onPickLogo(file: File | null) {
+    setLogoFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setLogoPreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setLogoPreview(empresa?.logo_url ?? null);
+    }
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
     setErr(null);
     try {
-      await upsertEmpresa(form);
+      // Si hay nuevo logo, primero hay que tener id (insert si no existe)
+      let id = form.id;
+      if (!id) {
+        const { data: created, error: cErr } = await supabase
+          .from('empresas')
+          .insert({
+            razon_social: form.razon_social,
+            activo: form.activo ?? true,
+          })
+          .select('id')
+          .single();
+        if (cErr) throw cErr;
+        id = created.id as string;
+      }
+      let logoUrl = form.logo_url ?? null;
+      if (logoFile) {
+        logoUrl = await uploadLogo(id!, logoFile);
+      }
+      await upsertEmpresa({ ...form, id, logo_url: logoUrl });
       onSaved();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Error');
@@ -206,6 +241,28 @@ function EmpresaForm({
   return (
     <Modal open={open} onClose={onClose} title={empresa ? 'Editar empresa' : 'Nueva empresa'} size="lg">
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <div className="flex items-start gap-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+            {logoPreview ? (
+              <img src={logoPreview} alt="logo" className="h-full w-full object-contain" />
+            ) : (
+              <span className="text-xs text-slate-400">Sin logo</span>
+            )}
+          </div>
+          <div className="flex-1">
+            <label className="text-sm font-medium text-slate-700">Logo de la empresa</label>
+            <p className="mt-0.5 text-xs text-slate-500">
+              PNG/JPG/SVG. Aparece arriba en el portal y en los documentos.
+            </p>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => onPickLogo(e.target.files?.[0] ?? null)}
+              className="mt-2 block w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-brand-600 file:px-3 file:py-1.5 file:text-white hover:file:bg-brand-700"
+            />
+          </div>
+        </div>
+
         <Input
           label="Razón social *"
           required

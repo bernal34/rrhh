@@ -16,8 +16,21 @@ export type Empresa = {
   representante_legal: string | null;
   representante_puesto: string | null;
   notas: string | null;
+  logo_url: string | null;
   activo: boolean;
 };
+
+export async function uploadLogo(empresaId: string, file: File): Promise<string> {
+  const ext = file.name.split('.').pop() ?? 'png';
+  const path = `${empresaId}/logo.${ext}`;
+  const { error: upErr } = await supabase.storage
+    .from('empresas-logos')
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (upErr) throw upErr;
+  const { data } = supabase.storage.from('empresas-logos').getPublicUrl(path);
+  // bust cache para que el nuevo logo se vea de inmediato
+  return `${data.publicUrl}?v=${Date.now()}`;
+}
 
 export async function listEmpresas(soloActivas = true) {
   let q = supabase.from('empresas').select('*').order('razon_social');
@@ -49,6 +62,7 @@ export async function upsertEmpresa(e: Partial<Empresa>) {
     representante_legal: e.representante_legal ?? null,
     representante_puesto: e.representante_puesto ?? null,
     notas: e.notas ?? null,
+    logo_url: e.logo_url ?? null,
     activo: e.activo ?? true,
   };
   if (e.id) payload.id = e.id;
