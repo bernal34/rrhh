@@ -36,9 +36,9 @@ body {
   background-clip: padding-box;
 }
 
-/* Focus ring consistente */
+/* Focus ring consistente (verde esmeralda) */
 *:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.3);
+  box-shadow: 0 0 0 3px rgb(16 185 129 / 0.3);
   border-radius: 4px;
 }
