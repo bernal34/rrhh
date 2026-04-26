@@ -61,17 +61,27 @@ begin
     raise exception 'Ya existe una prenómina autorizada o convertida para ese periodo/sucursal. Cancélala primero.';
   end if;
 
-  -- Limpiar prenóminas previas no autorizadas (borrador o en revisión) del mismo (periodo, sucursal)
+  -- Limpiar nomina_detalle de cualquier prenómina previa NO autorizada del mismo (periodo, sucursal).
+  -- Incluye borrador, en_revision Y cancelada (que dejaba huérfanos los detalles).
+  delete from nomina_conceptos_aplicados
+   where nomina_detalle_id in (
+     select nd.id from nomina_detalle nd
+      join prenomina p on p.id = nd.prenomina_id
+     where nd.periodo_id = p_periodo_id
+       and (p_sucursal_id is null or p.sucursal_id is not distinct from p_sucursal_id)
+       and p.estatus in ('borrador', 'en_revision', 'cancelada')
+   );
+
   delete from nomina_detalle
    where periodo_id = p_periodo_id
-     and empleado_id in (
-       select empleado_id from nomina_detalle nd
-        join prenomina p on p.id = nd.prenomina_id
-       where nd.periodo_id = p_periodo_id
-         and (p_sucursal_id is null or p.sucursal_id is not distinct from p_sucursal_id)
-         and p.estatus in ('borrador', 'en_revision')
+     and prenomina_id in (
+       select id from prenomina
+        where periodo_id = p_periodo_id
+          and (p_sucursal_id is null or sucursal_id is not distinct from p_sucursal_id)
+          and estatus in ('borrador', 'en_revision', 'cancelada')
      );
 
+  -- Marca como cancelada cualquiera que estuviera todavía en borrador/revisión
   update prenomina
      set estatus = 'cancelada'
    where periodo_id = p_periodo_id
