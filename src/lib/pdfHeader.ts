@@ -16,6 +16,30 @@ export type EmpresaPdf = {
   logo_url: string | null;
 };
 
+export async function getEmpresaById(id: string | null | undefined): Promise<EmpresaPdf | null> {
+  if (!id) return null;
+  const { data } = await supabase
+    .from('empresas')
+    .select(
+      'razon_social, rfc, domicilio_fiscal, ciudad, estado, cp, telefono, email, registro_patronal_imss, logo_url',
+    )
+    .eq('id', id)
+    .maybeSingle();
+  return (data as EmpresaPdf | null) ?? null;
+}
+
+/**
+ * Resuelve la empresa para el membrete: si se pasa empresaId la usa,
+ * si no, regresa la empresa marcada como principal (o la primera activa).
+ */
+export async function resolverEmpresaParaPdf(empresaId?: string | null): Promise<EmpresaPdf | null> {
+  if (empresaId) {
+    const e = await getEmpresaById(empresaId);
+    if (e) return e;
+  }
+  return getEmpresaPrincipal();
+}
+
 export async function getEmpresaPrincipal(): Promise<EmpresaPdf | null> {
   const { data: principal } = await supabase
     .from('empresas')

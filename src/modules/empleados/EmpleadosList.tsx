@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Search, Download, FileText, FileSignature, List, LayoutGrid, FileDown } from 'lucide-react';
 import { abrirConstanciaLaboral } from '@/lib/constancia';
 import { abrirContrato } from '@/lib/contrato';
-import { getEmpresaPrincipal, pdfFooterHTML, pdfHeaderHTML } from '@/lib/pdfHeader';
+import { resolverEmpresaParaPdf, pdfFooterHTML, pdfHeaderHTML } from '@/lib/pdfHeader';
+import { Empresa, listEmpresas } from '@/services/empresasService';
 import { useEmpleados } from '@/hooks/useEmpleados';
 import { useCatalogos } from '@/hooks/useCatalogos';
 import { useAuth } from '@/lib/auth';
@@ -35,17 +36,24 @@ export default function EmpleadosList() {
     localStorage.setItem('empleados.vista', v);
   }
   const [sucursalId, setSucursalId] = useState('');
+  const [empresaId, setEmpresaId] = useState('');
   const [estatus, setEstatus] = useState('');
   const [editing, setEditing] = useState<Empleado | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
 
   const [importing, setImporting] = useState(false);
-  const { data, loading, error, refresh, baja } = useEmpleados({
+  const { data: dataAll, loading, error, refresh, baja } = useEmpleados({
     sucursal_id: sucursalId || undefined,
     estatus: estatus || undefined,
     q,
   });
+  const data = empresaId ? dataAll.filter((e) => e.empresa_id === empresaId) : dataAll;
   const { sucursales, puestos } = useCatalogos();
+
+  useEffect(() => {
+    listEmpresas(true).then(setEmpresas).catch(() => setEmpresas([]));
+  }, []);
 
   async function onImportar() {
     if (!confirm('¿Importar empleados desde HikCentral Connect? Se traerán también sus fotos faciales.')) return;
@@ -107,7 +115,7 @@ export default function EmpleadosList() {
   }
 
   async function descargarPDF() {
-    const empresa = await getEmpresaPrincipal();
+    const empresa = await resolverEmpresaParaPdf(empresaId || null);
     const filas = data
       .map((e) => {
         const nombre = [e.nombre, e.apellido_paterno, e.apellido_materno]
@@ -226,6 +234,12 @@ ${pdfFooterHTML(empresa)}
           />
         </div>
         <Select
+          options={empresas.map((e) => ({ value: e.id, label: e.razon_social }))}
+          placeholder="Todas las empresas"
+          value={empresaId}
+          onChange={(e) => setEmpresaId(e.target.value)}
+        />
+        <Select
           options={sucursales.map((s) => ({ value: s.id, label: s.nombre }))}
           placeholder="Todas las sucursales"
           value={sucursalId}
@@ -243,6 +257,13 @@ ${pdfFooterHTML(empresa)}
           onChange={(e) => setEstatus(e.target.value)}
         />
       </div>
+      {empresaId && (
+        <div className="-mt-2 flex items-center gap-2 text-xs text-slate-600">
+          <FileText size={12} />
+          PDF se generará con membrete de:{' '}
+          <b>{empresas.find((e) => e.id === empresaId)?.razon_social}</b>
+        </div>
+      )}
 
       {vista === 'grid' ? (
         <>
