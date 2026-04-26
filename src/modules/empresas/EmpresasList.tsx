@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Plus, Trash2, RotateCcw, Building2 } from 'lucide-react';
+import { Plus, Trash2, RotateCcw, Building2, Star } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
@@ -8,6 +8,7 @@ import {
   Empresa,
   deleteEmpresa,
   listEmpresas,
+  marcarPrincipal,
   reactivarEmpresa,
   upsertEmpresa,
   uploadLogo,
@@ -38,6 +39,11 @@ export default function EmpresasList() {
   async function onBorrar(e: Empresa) {
     if (!confirm(`¿Desactivar "${e.razon_social}"?`)) return;
     await deleteEmpresa(e.id);
+    await load();
+  }
+
+  async function onMarcarPrincipal(e: Empresa) {
+    await marcarPrincipal(e.id);
     await load();
   }
 
@@ -73,6 +79,7 @@ export default function EmpresasList() {
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr>
+              <th className="px-4 py-3 w-10"></th>
               <th className="px-4 py-3">Razón social</th>
               <th className="px-4 py-3">RFC</th>
               <th className="px-4 py-3">Representante</th>
@@ -84,14 +91,14 @@ export default function EmpresasList() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-500">
                   Cargando…
                 </td>
               </tr>
             )}
             {!loading && rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-500">
                   Sin empresas registradas.
                 </td>
               </tr>
@@ -106,6 +113,19 @@ export default function EmpresasList() {
                   setOpen(true);
                 }}
               >
+                <td className="px-4 py-2 text-center" onClick={(ev) => ev.stopPropagation()}>
+                  {editar ? (
+                    <button
+                      onClick={() => onMarcarPrincipal(e)}
+                      title={e.principal ? 'Empresa principal' : 'Marcar como principal'}
+                      className={e.principal ? 'text-yellow-500' : 'text-slate-300 hover:text-yellow-400'}
+                    >
+                      <Star size={16} fill={e.principal ? 'currentColor' : 'none'} />
+                    </button>
+                  ) : (
+                    e.principal && <Star size={16} className="mx-auto text-yellow-500" fill="currentColor" />
+                  )}
+                </td>
                 <td className="px-4 py-2">
                   <div className="font-medium text-slate-800">{e.razon_social}</div>
                   {e.nombre_comercial && (

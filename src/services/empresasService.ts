@@ -17,8 +17,23 @@ export type Empresa = {
   representante_puesto: string | null;
   notas: string | null;
   logo_url: string | null;
+  principal: boolean;
   activo: boolean;
 };
+
+export async function marcarPrincipal(id: string) {
+  // Quita principal de las demás primero (para no romper el unique parcial)
+  const { error: e1 } = await supabase
+    .from('empresas')
+    .update({ principal: false })
+    .neq('id', id);
+  if (e1) throw e1;
+  const { error: e2 } = await supabase
+    .from('empresas')
+    .update({ principal: true })
+    .eq('id', id);
+  if (e2) throw e2;
+}
 
 export async function uploadLogo(empresaId: string, file: File): Promise<string> {
   const ext = file.name.split('.').pop() ?? 'png';
@@ -64,6 +79,7 @@ export async function upsertEmpresa(e: Partial<Empresa>) {
     notas: e.notas ?? null,
     logo_url: e.logo_url ?? null,
     activo: e.activo ?? true,
+    // principal se gestiona aparte vía marcarPrincipal() para respetar el unique
   };
   if (e.id) payload.id = e.id;
   const { error } = await supabase.from('empresas').upsert(payload);

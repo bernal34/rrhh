@@ -34,6 +34,18 @@ function useEmpresaHeader() {
   useEffect(() => {
     (async () => {
       try {
+        // Prioriza la empresa marcada como principal
+        const { data: principal } = await supabase
+          .from('empresas')
+          .select('razon_social, logo_url')
+          .eq('activo', true)
+          .eq('principal', true)
+          .maybeSingle();
+        if (principal) {
+          setEmp(principal as EmpresaHdr);
+          return;
+        }
+        // Fallback: primera alfabética
         const { data } = await supabase
           .from('empresas')
           .select('razon_social, logo_url')
