@@ -30,8 +30,16 @@ create or replace view mis_checadas as
 grant select on mis_checadas to authenticated;
 
 -- Vista: mi asistencia (últimos 60 días)
+-- estatus se deriva igual que en v_reporte_asistencia
 create or replace view mi_asistencia as
-  select a.fecha, a.entrada_real, a.salida_real, a.minutos_retardo, a.estatus, a.incidencia
+  select a.fecha, a.entrada_real, a.salida_real, a.minutos_retardo, a.incidencia,
+         case
+           when a.turno_id is null then 'descanso'
+           when a.falta then 'falta'
+           when a.minutos_retardo > 0 then 'retardo'
+           when a.entrada_real is not null then 'puntual'
+           else 'pendiente'
+         end as estatus
     from asistencia_dia a
     join empleados e on e.id = a.empleado_id
    where e.user_id = auth.uid()
