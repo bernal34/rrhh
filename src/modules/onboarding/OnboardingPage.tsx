@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { CheckCircle2, Circle, UserCheck, UserMinus, Settings, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, Circle, UserCheck, UserMinus, Settings, Plus, Trash2, ClipboardCheck } from 'lucide-react';
 import { Tabs } from '@/components/ui/Tabs';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
