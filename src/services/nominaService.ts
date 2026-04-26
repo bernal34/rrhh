@@ -55,6 +55,48 @@ export async function crearPeriodo(p: Partial<Periodo>) {
   return data as Periodo;
 }
 
+export type PeriodoConPrenominas = Periodo & {
+  prenominas: Array<{ id: string; estatus: string; num_empleados: number }>;
+};
+
+export async function listPeriodosConPrenominas(): Promise<PeriodoConPrenominas[]> {
+  const { data, error } = await supabase
+    .from('periodos_nomina')
+    .select('*, prenominas:prenomina(id, estatus, num_empleados)')
+    .order('fecha_inicio', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as PeriodoConPrenominas[];
+}
+
+export async function eliminarPeriodo(periodoId: string) {
+  // Verifica que no haya prenómina autorizada/convertida
+  const { data: prenominas } = await supabase
+    .from('prenomina')
+    .select('id, estatus')
+    .eq('periodo_id', periodoId);
+  const bloqueadas = (prenominas ?? []).filter(
+    (p: any) => p.estatus === 'autorizada' || p.estatus === 'convertida',
+  );
+  if (bloqueadas.length > 0) {
+    throw new Error(
+      `No se puede eliminar: el periodo tiene ${bloqueadas.length} prenómina(s) autorizada(s) o convertida(s).`,
+    );
+  }
+  // Borrar en cascada: conceptos → detalles → prenominas → periodo
+  const { data: detalles } = await supabase
+    .from('nomina_detalle')
+    .select('id')
+    .eq('periodo_id', periodoId);
+  const detalleIds = (detalles ?? []).map((d: any) => d.id);
+  if (detalleIds.length > 0) {
+    await supabase.from('nomina_conceptos_aplicados').delete().in('nomina_detalle_id', detalleIds);
+    await supabase.from('nomina_detalle').delete().eq('periodo_id', periodoId);
+  }
+  await supabase.from('prenomina').delete().eq('periodo_id', periodoId);
+  const { error } = await supabase.from('periodos_nomina').delete().eq('id', periodoId);
+  if (error) throw error;
+}
+
 export async function listPrenominas() {
   const { data, error } = await supabase
     .from('prenomina')
