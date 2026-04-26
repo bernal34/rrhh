@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Plus, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, FileText } from 'lucide-react';
+import { abrirAcumuladoPeriodoPdf } from '@/lib/nominaPdf';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -141,6 +142,15 @@ export default function PeriodosPanel() {
                     )}
                   </td>
                   <td className="px-4 py-2 text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => abrirAcumuladoPeriodoPdf(p.id)}
+                      title="PDF acumulado del periodo"
+                      disabled={p.prenominas.length === 0}
+                    >
+                      <FileText size={14} />
+                    </Button>
                     {editar && (
                       <Button
                         variant="ghost"

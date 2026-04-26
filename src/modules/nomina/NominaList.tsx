@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Check, X, FileText, Send, Plus, Trash2 } from 'lucide-react';
+import { Check, X, FileText, Send, Plus, Trash2, FileBarChart } from 'lucide-react';
+import { abrirPrenominaPdf, abrirResumenAnualPdf } from '@/lib/nominaPdf';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -66,16 +67,26 @@ export default function NominaList() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Nómina y prenómina</h1>
-        {editar && (
-          <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setModalPeriodo(true)}>
-              <Plus size={16} /> Nuevo periodo
-            </Button>
-            <Button onClick={() => setModalGen(true)}>
-              <FileText size={16} /> Generar prenómina
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => abrirResumenAnualPdf(new Date().getFullYear())}
+            title="Resumen anual de nómina"
+          >
+            <FileBarChart size={14} /> Resumen anual
+          </Button>
+          {editar && (
+            <>
+              <Button variant="secondary" onClick={() => setModalPeriodo(true)}>
+                <Plus size={16} /> Nuevo periodo
+              </Button>
+              <Button onClick={() => setModalGen(true)}>
+                <FileText size={16} /> Generar prenómina
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -133,6 +144,14 @@ export default function NominaList() {
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="sm" onClick={() => setDetalleId(p.id)}>
                       Ver
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => abrirPrenominaPdf(p.id)}
+                      title="PDF reporte de prenómina"
+                    >
+                      <FileText size={14} />
                     </Button>
                     {editar && p.estatus === 'borrador' && (
                       <Button
