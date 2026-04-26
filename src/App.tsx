@@ -26,6 +26,7 @@ import EmpresasList from './modules/empresas/EmpresasList';
 import PrestamosList from './modules/prestamos/PrestamosList';
 import Nom035Page from './modules/nom035/Nom035Page';
 import NotificacionesPage from './modules/notificaciones/NotificacionesPage';
+import MiPortal from './modules/miportal/MiPortal';
 
 const r = (modulo: string, el: React.ReactNode) => (
   <RequireModulo modulo={modulo}>{el}</RequireModulo>
@@ -42,6 +43,7 @@ export default function App() {
             <Layout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/mi-portal" element={<MiPortal />} />
                 <Route path="/empleados" element={r('empleados', <EmpleadosList />)} />
                 <Route path="/sucursales" element={r('sucursales', <SucursalesList />)} />
                 <Route path="/empresas" element={r('empresas', <EmpresasList />)} />

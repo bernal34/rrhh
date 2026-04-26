@@ -8,7 +8,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Tabs } from '@/components/ui/Tabs';
 import { useCatalogos } from '@/hooks/useCatalogos';
 import { Empresa, listEmpresas } from '@/services/empresasService';
-import { listEmpleados } from '@/services/empleadosService';
+import { listAuthUsers, listEmpleados } from '@/services/empleadosService';
 import {
   Empleado,
   getHikMapping,
@@ -82,6 +82,7 @@ export default function EmpleadoForm({ open, onClose, empleado, onSaved }: Props
   const [grupos, setGrupos] = useState<GrupoHorario[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [posiblesJefes, setPosiblesJefes] = useState<Empleado[]>([]);
+  const [authUsers, setAuthUsers] = useState<Array<{ id: string; email: string }>>([]);
   const [grupoActual, setGrupoActual] = useState<string>('');
   const [grupoInicial, setGrupoInicial] = useState<string>('');
 
@@ -97,6 +98,7 @@ export default function EmpleadoForm({ open, onClose, empleado, onSaved }: Props
     listEmpleados({ estatus: 'activo' })
       .then((emps) => setPosiblesJefes(emps.filter((e) => e.id !== empleado?.id)))
       .catch(() => setPosiblesJefes([]));
+    listAuthUsers().then(setAuthUsers).catch(() => setAuthUsers([]));
 
     if (empleado?.id) {
       getHikMapping(empleado.id).then((m) => setHikPersonId(m?.hik_person_id ?? null));
@@ -272,6 +274,13 @@ export default function EmpleadoForm({ open, onClose, empleado, onSaved }: Props
           placeholder="Sin jefe asignado"
           value={form.jefe_id ?? ''}
           onChange={(e) => set('jefe_id', e.target.value || null)}
+        />
+        <Select
+          label="Cuenta de portal asociada"
+          options={authUsers.map((u) => ({ value: u.id, label: u.email }))}
+          placeholder="Sin cuenta asociada"
+          value={form.user_id ?? ''}
+          onChange={(e) => set('user_id', e.target.value || null)}
         />
       </Section>
 

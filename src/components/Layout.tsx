@@ -23,6 +23,7 @@ import {
   Bell,
   Heart,
   HandCoins,
+  UserCircle,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
@@ -71,7 +72,10 @@ type NavGroup = { title: string | null; items: NavItem[] };
 const navGroups: NavGroup[] = [
   {
     title: null,
-    items: [{ to: '/', label: 'Dashboard', icon: LayoutDashboard, modulo: null }],
+    items: [
+      { to: '/', label: 'Dashboard', icon: LayoutDashboard, modulo: null },
+      { to: '/mi-portal', label: 'Mi portal', icon: UserCircle, modulo: null },
+    ],
   },
   {
     title: 'Operación',

@@ -23,7 +23,14 @@ export type Empleado = {
   foto_url: string | null;
   jefe_id?: string | null;
   empresa_id?: string | null;
+  user_id?: string | null;
 };
+
+export async function listAuthUsers(): Promise<Array<{ id: string; email: string }>> {
+  const { data, error } = await supabase.rpc('list_usuarios_admin');
+  if (error) return [];
+  return (data ?? []).map((u: any) => ({ id: u.id, email: u.email }));
+}
 
 export async function listEmpleados(filtros?: { sucursal_id?: string; estatus?: string }) {
   let q = supabase.from('empleados').select('*').order('nombre');
