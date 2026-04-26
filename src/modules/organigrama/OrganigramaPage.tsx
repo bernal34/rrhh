@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, User } from 'lucide-react';
+import { ChevronDown, ChevronRight, User, Network } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 type Nodo = {
   id: string;
@@ -46,9 +47,11 @@ export default function OrganigramaPage() {
         </p>
       </div>
       {arboles.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">
-          No hay empleados. Agrega empleados y asigna su jefe directo desde la ficha.
-        </div>
+        <EmptyState
+          icon={Network}
+          title="Sin organigrama todavía"
+          description="Agrega empleados y asigna su jefe directo desde la ficha (pestaña Datos → Empleo) para construir la jerarquía."
+        />
       ) : (
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           {arboles.map((n) => (

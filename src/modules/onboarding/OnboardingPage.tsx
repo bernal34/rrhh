@@ -5,6 +5,7 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/lib/auth';
 import {
   ChecklistItem,
@@ -201,9 +202,11 @@ function ChecklistPanel({
       )}
 
       {!empleadoId && (
-        <div className="rounded-lg border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">
-          Selecciona un empleado para ver y marcar su checklist.
-        </div>
+        <EmptyState
+          icon={ClipboardCheck}
+          title="Selecciona un empleado"
+          description={`Elige un empleado del menú para ver y marcar su checklist de ${flujo === 'onboarding' ? 'incorporación' : 'salida'}.`}
+        />
       )}
 
       <ItemsEditor
