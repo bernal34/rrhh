@@ -96,12 +96,13 @@ function splitDepartamento(path: string | undefined): {
     // Solo sucursal, sin puesto.
     return { raw, sucursal: parts[0], puesto: null, intermedios: [] };
   }
-  // 2+ niveles: nivel 1 = sucursal, nivel 2 = puesto, niveles 3+ = sub-detalle informativo.
+  // 2+ niveles: nivel 1 = sucursal, último nivel = puesto (lo más específico),
+  // niveles intermedios = áreas/sub-áreas informativas (no se persisten).
   return {
     raw,
     sucursal: parts[0],
-    puesto: parts[1],
-    intermedios: parts.slice(2),
+    puesto: parts[parts.length - 1],
+    intermedios: parts.slice(1, -1),
   };
 }
 
