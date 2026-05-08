@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Download, FileText, FileSignature, List, LayoutGrid, FileDown, Users } from 'lucide-react';
+import { Plus, Search, Download, FileText, FileSignature, List, LayoutGrid, FileDown, FileSpreadsheet, Users } from 'lucide-react';
 import PageHeader from '@/components/PageHeader';
 import { abrirConstanciaLaboral } from '@/lib/constancia';
 import { abrirContrato } from '@/lib/contrato';
@@ -72,6 +72,9 @@ export default function EmpleadosList() {
 
   const puestoById = Object.fromEntries(puestos.map((p) => [p.id, p.nombre]));
   const sucursalById = Object.fromEntries(sucursales.map((s) => [s.id, s.nombre]));
+  const empresaById = Object.fromEntries(
+    empresas.map((e) => [e.id, e.nombre_comercial || e.razon_social]),
+  );
 
   function onNuevo() {
     setEditing(null);
@@ -85,6 +88,70 @@ export default function EmpleadosList() {
     const motivo = window.prompt(`Motivo de baja de ${emp.nombre}:`);
     if (!motivo) return;
     await baja(emp.id, motivo);
+  }
+
+  function descargarHCC() {
+    // Formato HCC (HikCentral Connect): TSV con 8 columnas.
+    // Campos no exportables (NSS, RFC, teléfono, etc.) se completan manualmente en HCC.
+    const headers = [
+      'ID',
+      '*Nombre',
+      '*Apellido',
+      '*Departamento',
+      'Fecha de inicio del periodo efectivo',
+      'Fecha final del periodo efectivo',
+      'Autoservicio',
+      'Correo electrónico',
+    ];
+
+    const fmtFecha = (iso: string, finDelDia = false) => {
+      const d = new Date(`${iso}T00:00:00`);
+      if (Number.isNaN(d.getTime())) return '';
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}/${mm}/${dd} ${finDelDia ? '23:59:59' : '00:00:00'}`;
+    };
+
+    const sumarAnios = (iso: string, anios: number) => {
+      const d = new Date(`${iso}T00:00:00`);
+      if (Number.isNaN(d.getTime())) return iso;
+      d.setFullYear(d.getFullYear() + anios);
+      return d.toISOString().slice(0, 10);
+    };
+
+    const limpiar = (v: unknown) => String(v ?? '').replace(/\t/g, ' ').replace(/[\r\n]+/g, ' ');
+
+    const filas = data.map((e) => {
+      const apellido = [e.apellido_paterno, e.apellido_materno].filter(Boolean).join(' ');
+      const empresa = e.empresa_id ? empresaById[e.empresa_id] ?? '' : '';
+      const sucursal = e.sucursal_id ? sucursalById[e.sucursal_id] ?? '' : '';
+      const puesto = e.puesto_id ? puestoById[e.puesto_id] ?? '' : '';
+      const departamento = [empresa, sucursal, puesto].filter(Boolean).join('/');
+      const fechaInicio = fmtFecha(e.fecha_ingreso);
+      const fechaFin = fmtFecha(sumarAnios(e.fecha_ingreso, 10), true);
+      return [
+        e.codigo ?? '',
+        e.nombre,
+        apellido,
+        departamento,
+        fechaInicio,
+        fechaFin,
+        'Inhabilitar',
+        e.email ?? '',
+      ]
+        .map(limpiar)
+        .join('\t');
+    });
+
+    const tsv = '\ufeff' + headers.join('\t') + '\n' + filas.join('\n') + '\n';
+    const blob = new Blob([tsv], { type: 'text/tab-separated-values;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `hcc_empleados_${new Date().toISOString().slice(0, 10)}.tsv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function descargarCSV() {
@@ -208,6 +275,15 @@ ${pdfFooterHTML(empresa)}
           </Button>
           <Button variant="secondary" size="sm" onClick={descargarPDF} disabled={data.length === 0}>
             <FileText size={14} /> PDF
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={descargarHCC}
+            disabled={data.length === 0}
+            title="Exporta el listado en el formato de HikCentral Connect (TSV)"
+          >
+            <FileSpreadsheet size={14} /> HCC
           </Button>
             {editar && (
               <>
