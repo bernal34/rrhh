@@ -115,6 +115,64 @@ export async function asignarEmpleadoAGrupo(empleadoId: string, grupoId: string,
   if (error) throw error;
 }
 
+export type BatchModo = 'solo-sin-grupo' | 'reasignar';
+
+// Asigna un grupo horario a múltiples empleados.
+// - 'solo-sin-grupo': solo inserta para los que no tienen asignación vigente.
+// - 'reasignar': cierra la asignación vigente con fecha de hoy e inserta nueva.
+export async function asignarGrupoBatch(
+  empleadoIds: string[],
+  grupoId: string,
+  modo: BatchModo,
+): Promise<{ asignados: number; ya_tenian: number }> {
+  if (empleadoIds.length === 0) return { asignados: 0, ya_tenian: 0 };
+
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  // Lookup: qué empleados ya tienen un grupo activo
+  const { data: vigentes, error: errSel } = await supabase
+    .from('empleado_grupo')
+    .select('empleado_id')
+    .in('empleado_id', empleadoIds)
+    .is('vigente_hasta', null);
+  if (errSel) throw errSel;
+  const conGrupo = new Set((vigentes ?? []).map((v: { empleado_id: string }) => v.empleado_id));
+
+  let aInsertar: string[];
+  if (modo === 'reasignar') {
+    if (conGrupo.size > 0) {
+      const { error: errClose } = await supabase
+        .from('empleado_grupo')
+        .update({ vigente_hasta: hoy })
+        .in('empleado_id', Array.from(conGrupo))
+        .is('vigente_hasta', null);
+      if (errClose) throw errClose;
+    }
+    aInsertar = empleadoIds;
+  } else {
+    aInsertar = empleadoIds.filter((id) => !conGrupo.has(id));
+  }
+
+  if (aInsertar.length > 0) {
+    const payload = aInsertar.map((empleado_id) => ({
+      empleado_id,
+      grupo_id: grupoId,
+      vigente_desde: hoy,
+    }));
+    // Inserta en lotes de 500 para no rebasar límites
+    for (let i = 0; i < payload.length; i += 500) {
+      const batch = payload.slice(i, i + 500);
+      const { error } = await supabase.from('empleado_grupo').insert(batch);
+      if (error) throw error;
+    }
+  }
+
+  return {
+    asignados: aInsertar.length,
+    ya_tenian: empleadoIds.length - aInsertar.length,
+  };
+}
+
 export async function getGrupoActualDeEmpleado(empleadoId: string) {
   const { data } = await supabase
     .from('empleado_grupo')

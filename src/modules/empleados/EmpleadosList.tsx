@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Download, FileText, FileSignature, List, LayoutGrid, FileDown, FileSpreadsheet, FileUp, Users } from 'lucide-react';
+import { Plus, Search, Download, FileText, FileSignature, List, LayoutGrid, FileDown, FileSpreadsheet, FileUp, Users, Clock } from 'lucide-react';
 import { useRef } from 'react';
 import PageHeader from '@/components/PageHeader';
 import { abrirConstanciaLaboral } from '@/lib/constancia';
@@ -23,6 +23,7 @@ import { Select } from '@/components/ui/Select';
 import { Avatar } from '@/components/ui/Avatar';
 import EmpleadoForm from './EmpleadoForm';
 import EmpleadosImportModal from './EmpleadosImportModal';
+import EmpleadoHorarioBatchModal from './EmpleadoHorarioBatchModal';
 
 const estatusBadge: Record<string, string> = {
   activo: 'bg-green-100 text-green-700',
@@ -56,6 +57,7 @@ export default function EmpleadosList() {
   const [importExcelLoading, setImportExcelLoading] = useState(false);
   const [importPlan, setImportPlan] = useState<Plan | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [horarioBatchOpen, setHorarioBatchOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: dataAll, loading, error, refresh, baja } = useEmpleados({
     sucursal_id: sucursalId || undefined,
@@ -321,6 +323,15 @@ ${pdfFooterHTML(empresa)}
           </Button>
             {editar && (
               <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setHorarioBatchOpen(true)}
+                  disabled={data.length === 0}
+                  title="Asignar un grupo de horario a los empleados filtrados"
+                >
+                  <Clock size={14} /> Asignar horario
+                </Button>
                 <Button variant="secondary" onClick={onImportar} loading={importing}>
                   <Download size={16} /> Importar desde HCC
                 </Button>
@@ -590,6 +601,13 @@ ${pdfFooterHTML(empresa)}
         open={importModalOpen}
         onClose={() => setImportModalOpen(false)}
         plan={importPlan}
+        onApplied={refresh}
+      />
+
+      <EmpleadoHorarioBatchModal
+        open={horarioBatchOpen}
+        onClose={() => setHorarioBatchOpen(false)}
+        empleadoIds={data.map((e) => e.id)}
         onApplied={refresh}
       />
     </div>
