@@ -76,19 +76,13 @@ export default function EmpleadosImportModal({ open, onClose, plan, onApplied }:
             <Stat label="Omitidos" valor={plan.resumen.omitidos} color="text-amber-700" />
           </div>
 
-          {(plan.resumen.empresas_faltantes.length > 0 ||
-            plan.resumen.sucursales_faltantes.length > 0 ||
+          {(plan.resumen.sucursales_faltantes.length > 0 ||
             plan.resumen.puestos_faltantes.length > 0) && (
             <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm">
               <div className="font-semibold text-amber-900">
                 Catálogos faltantes (los empleados se crean/actualizan, pero estos campos quedan vacíos)
               </div>
               <ul className="mt-2 space-y-1 text-amber-800">
-                {plan.resumen.empresas_faltantes.length > 0 && (
-                  <li>
-                    <b>Empresas:</b> {plan.resumen.empresas_faltantes.join(', ')}
-                  </li>
-                )}
                 {plan.resumen.sucursales_faltantes.length > 0 && (
                   <li>
                     <b>Sucursales:</b> {plan.resumen.sucursales_faltantes.join(', ')}
@@ -162,6 +156,12 @@ const accionBadge: Record<ResolvedRow['accion'], string> = {
 
 function RowPreview({ r }: { r: ResolvedRow }) {
   const apellido = [r.apellido_paterno, r.apellido_materno].filter(Boolean).join(' ');
+  const notas: string[] = [];
+  if (r.motivo_omitir) notas.push(r.motivo_omitir);
+  notas.push(...r.faltantes);
+  if (r.niveles_intermedios.length > 0) {
+    notas.push(`Sub-niveles ignorados: ${r.niveles_intermedios.join(' › ')}`);
+  }
   return (
     <tr className="border-t border-slate-100">
       <td className="px-2 py-1.5">
@@ -176,9 +176,7 @@ function RowPreview({ r }: { r: ResolvedRow }) {
       <td className="px-2 py-1.5">{apellido || '—'}</td>
       <td className="px-2 py-1.5 text-slate-600">{r.departamento_raw ?? '—'}</td>
       <td className="px-2 py-1.5 text-slate-600">{r.fecha_ingreso || '—'}</td>
-      <td className="px-2 py-1.5 text-amber-700">
-        {r.motivo_omitir ?? r.faltantes.join(' · ') ?? ''}
-      </td>
+      <td className="px-2 py-1.5 text-amber-700">{notas.join(' · ')}</td>
     </tr>
   );
 }

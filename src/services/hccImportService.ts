@@ -1,6 +1,5 @@
 import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
-import { Empresa } from './empresasService';
 import { Sucursal, Puesto } from './catalogosService';
 
 // Filas crudas tal como vienen del XLSX de HCC (Información personal).
@@ -26,15 +25,14 @@ export type FilaParsed = {
   apellido_materno: string | null;
   email: string | null;
   fecha_ingreso: string; // YYYY-MM-DD
-  empresa_path: string | null; // primer segmento
-  sucursal_path: string | null; // segundo segmento
-  puesto_path: string | null; // último segmento
+  sucursal_path: string | null; // primer segmento del path
+  puesto_path: string | null; // último segmento del path
+  niveles_intermedios: string[]; // segmentos descartados (info)
   departamento_raw: string | null;
 };
 
 export type ResolvedRow = FilaParsed & {
   existing_id: string | null;
-  empresa_id: string | null;
   sucursal_id: string | null;
   puesto_id: string | null;
   faltantes: string[]; // descripciones legibles
@@ -49,7 +47,6 @@ export type Plan = {
     a_crear: number;
     a_actualizar: number;
     omitidos: number;
-    empresas_faltantes: string[];
     sucursales_faltantes: string[];
     puestos_faltantes: string[];
   };
@@ -84,29 +81,27 @@ function splitApellido(v: string | undefined): { paterno: string | null; materno
 
 function splitDepartamento(path: string | undefined): {
   raw: string | null;
-  empresa: string | null;
   sucursal: string | null;
   puesto: string | null;
+  intermedios: string[];
 } {
   const raw = (path ?? '').trim();
-  if (!raw) return { raw: null, empresa: null, sucursal: null, puesto: null };
+  if (!raw) return { raw: null, sucursal: null, puesto: null, intermedios: [] };
   const parts = raw
     .split('/')
     .map((p) => p.trim())
     .filter(Boolean);
-  if (parts.length === 0) return { raw, empresa: null, sucursal: null, puesto: null };
+  if (parts.length === 0) return { raw, sucursal: null, puesto: null, intermedios: [] };
   if (parts.length === 1) {
-    return { raw, empresa: parts[0], sucursal: null, puesto: null };
+    // Solo sucursal, sin puesto.
+    return { raw, sucursal: parts[0], puesto: null, intermedios: [] };
   }
-  if (parts.length === 2) {
-    return { raw, empresa: parts[0], sucursal: null, puesto: parts[1] };
-  }
-  // 3+ niveles: empresa = primero, sucursal = segundo, puesto = último.
+  // 2+ niveles: nivel 1 = sucursal, nivel 2 = puesto, niveles 3+ = sub-detalle informativo.
   return {
     raw,
-    empresa: parts[0],
-    sucursal: parts[1],
-    puesto: parts[parts.length - 1],
+    sucursal: parts[0],
+    puesto: parts[1],
+    intermedios: parts.slice(2),
   };
 }
 
@@ -135,9 +130,9 @@ export function parseXlsxHCC(file: File): Promise<FilaParsed[]> {
             apellido_materno: materno,
             email: (r['Correo electrónico'] ?? '').toString().trim() || null,
             fecha_ingreso: fechaIso(r['Fecha de inicio del periodo efectivo']),
-            empresa_path: dep.empresa,
             sucursal_path: dep.sucursal,
             puesto_path: dep.puesto,
+            niveles_intermedios: dep.intermedios,
             departamento_raw: dep.raw,
           });
         });
@@ -161,36 +156,21 @@ const norm = (s: string | null | undefined) =>
 
 export function buildPlan(
   filas: FilaParsed[],
-  empresas: Empresa[],
   sucursales: Sucursal[],
   puestos: Puesto[],
   empleadosByCodigo: Map<string, string>, // codigo -> id
 ): Plan {
-  const empresaByName = new Map<string, string>();
-  empresas.forEach((e) => {
-    empresaByName.set(norm(e.razon_social), e.id);
-    if (e.nombre_comercial) empresaByName.set(norm(e.nombre_comercial), e.id);
-  });
   const sucursalByName = new Map(sucursales.map((s) => [norm(s.nombre), s.id]));
   const puestoByName = new Map(puestos.map((p) => [norm(p.nombre), p.id]));
 
-  const empresasFaltantes = new Set<string>();
   const sucursalesFaltantes = new Set<string>();
   const puestosFaltantes = new Set<string>();
 
   const rows: ResolvedRow[] = filas.map((f) => {
     const faltantes: string[] = [];
-    let empresa_id: string | null = null;
     let sucursal_id: string | null = null;
     let puesto_id: string | null = null;
 
-    if (f.empresa_path) {
-      empresa_id = empresaByName.get(norm(f.empresa_path)) ?? null;
-      if (!empresa_id) {
-        faltantes.push(`Empresa: "${f.empresa_path}"`);
-        empresasFaltantes.add(f.empresa_path);
-      }
-    }
     if (f.sucursal_path) {
       sucursal_id = sucursalByName.get(norm(f.sucursal_path)) ?? null;
       if (!sucursal_id) {
@@ -217,7 +197,6 @@ export function buildPlan(
     return {
       ...f,
       existing_id,
-      empresa_id,
       sucursal_id,
       puesto_id,
       faltantes,
@@ -231,7 +210,6 @@ export function buildPlan(
     a_crear: rows.filter((r) => r.accion === 'crear').length,
     a_actualizar: rows.filter((r) => r.accion === 'actualizar').length,
     omitidos: rows.filter((r) => r.accion === 'omitir').length,
-    empresas_faltantes: [...empresasFaltantes].sort(),
     sucursales_faltantes: [...sucursalesFaltantes].sort(),
     puestos_faltantes: [...puestosFaltantes].sort(),
   };
@@ -267,7 +245,6 @@ export async function applyPlan(plan: Plan): Promise<{
       apellido_materno: r.apellido_materno,
       email: r.email,
       fecha_ingreso: r.fecha_ingreso,
-      empresa_id: r.empresa_id,
       sucursal_id: r.sucursal_id,
       puesto_id: r.puesto_id,
     };

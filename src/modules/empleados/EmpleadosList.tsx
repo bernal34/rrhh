@@ -93,7 +93,7 @@ export default function EmpleadosList() {
         alert('No se encontraron filas válidas en el archivo (verifica que tenga los encabezados ID, *Nombre, *Apellido, *Departamento).');
         return;
       }
-      const plan = buildPlan(filas, empresas, sucursales, puestos, codigosMap);
+      const plan = buildPlan(filas, sucursales, puestos, codigosMap);
       setImportPlan(plan);
       setImportModalOpen(true);
     } catch (e) {
@@ -106,9 +106,6 @@ export default function EmpleadosList() {
 
   const puestoById = Object.fromEntries(puestos.map((p) => [p.id, p.nombre]));
   const sucursalById = Object.fromEntries(sucursales.map((s) => [s.id, s.nombre]));
-  const empresaById = Object.fromEntries(
-    empresas.map((e) => [e.id, e.nombre_comercial || e.razon_social]),
-  );
 
   function onNuevo() {
     setEditing(null);
@@ -158,10 +155,9 @@ export default function EmpleadosList() {
 
     const filas = data.map((e) => {
       const apellido = [e.apellido_paterno, e.apellido_materno].filter(Boolean).join(' ');
-      const empresa = e.empresa_id ? empresaById[e.empresa_id] ?? '' : '';
       const sucursal = e.sucursal_id ? sucursalById[e.sucursal_id] ?? '' : '';
       const puesto = e.puesto_id ? puestoById[e.puesto_id] ?? '' : '';
-      const departamento = [empresa, sucursal, puesto].filter(Boolean).join('/');
+      const departamento = [sucursal, puesto].filter(Boolean).join('/');
       const fechaInicio = fmtFecha(e.fecha_ingreso);
       const fechaFin = fmtFecha(sumarAnios(e.fecha_ingreso, 10), true);
       return [
