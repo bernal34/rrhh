@@ -47,7 +47,7 @@ export default function EmpleadosList() {
   }
   const [sucursalId, setSucursalId] = useState('');
   const [empresaId, setEmpresaId] = useState('');
-  const [estatus, setEstatus] = useState('');
+  const [estatus, setEstatus] = useState('activo');
   const [editing, setEditing] = useState<Empleado | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
