@@ -89,6 +89,17 @@ function detectarHcc(rows: string[][]): HccLayout | null {
   return null;
 }
 
+function fmtFechaHoraDisplay(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+}
+
 // Combina "DD-MM-YYYY" + "HH:MM" en ISO 8601 (zona local).
 function combinarFechaTiempo(fechaStr: string, tiempoStr: string): string | null {
   const f = fechaStr.trim();
@@ -378,7 +389,9 @@ export default function ImportadorCsv({
                     <tr key={l.fila} className="border-t border-slate-100">
                       <td className="px-2 py-1 tabular-nums text-slate-500">{l.fila}</td>
                       <td className="px-2 py-1 font-mono">{l.codigo}</td>
-                      <td className="px-2 py-1 text-slate-600">{l.fechaHora}</td>
+                      <td className="px-2 py-1 text-slate-600 tabular-nums">
+                        {fmtFechaHoraDisplay(l.fechaHora)}
+                      </td>
                       <td className="px-2 py-1 capitalize">{l.tipo}</td>
                       <td className="px-2 py-1">
                         {l.ok ? (
