@@ -164,7 +164,7 @@ ${pdfFooterHTML(empresa)}
           {editar && (
             <>
               <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
-                <Upload size={14} /> Importar CSV
+                <Upload size={14} /> Importar checadas
               </Button>
               <Button variant="secondary" onClick={onRecalcular} loading={recalc}>
                 <RefreshCw size={16} /> Recalcular rango

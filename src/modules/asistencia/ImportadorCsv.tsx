@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as XLSX from 'xlsx';
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -15,7 +16,7 @@ type Linea = {
   error?: string;
 };
 
-type Resumen = { ok: number; error: number; insertadas: number };
+type Resumen = { ok: number; error: number; insertadas: number; ignoradas_duplicadas: number };
 
 const TIPOS_VALIDOS = new Set(['entrada', 'salida', 'desconocido']);
 
@@ -53,6 +54,62 @@ function parseCsv(text: string): string[][] {
   });
 }
 
+// Lee XLSX como matriz de strings (cada celda como string).
+async function readXlsxMatrix(file: File): Promise<string[][]> {
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+  const sh = wb.Sheets[wb.SheetNames[0]];
+  const json = XLSX.utils.sheet_to_json<string[]>(sh, {
+    header: 1,
+    defval: '',
+    raw: false,
+  });
+  return json.map((row) => (row as unknown[]).map((c) => String(c ?? '').trim()));
+}
+
+// Detecta el formato HCC: busca una fila cuyo header contenga "ID", "Fecha", "Tiempo"
+// y devuelve el índice de esa fila + los índices de las columnas relevantes.
+type HccLayout = {
+  headerRowIdx: number;
+  colId: number;
+  colFecha: number;
+  colTiempo: number;
+};
+
+function detectarHcc(rows: string[][]): HccLayout | null {
+  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+    const r = rows[i].map((c) => c.toLowerCase());
+    const colId = r.findIndex((c) => c === 'id');
+    const colFecha = r.findIndex((c) => c === 'fecha');
+    const colTiempo = r.findIndex((c) => c === 'tiempo');
+    if (colId >= 0 && colFecha >= 0 && colTiempo >= 0) {
+      return { headerRowIdx: i, colId, colFecha, colTiempo };
+    }
+  }
+  return null;
+}
+
+// Combina "DD-MM-YYYY" + "HH:MM" en ISO 8601 (zona local).
+function combinarFechaTiempo(fechaStr: string, tiempoStr: string): string | null {
+  const f = fechaStr.trim();
+  const t = (tiempoStr ?? '').trim();
+  // DD-MM-YYYY o DD/MM/YYYY
+  const mFecha = f.match(/^(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})$/);
+  if (!mFecha) return null;
+  const dd = mFecha[1].padStart(2, '0');
+  const mm = mFecha[2].padStart(2, '0');
+  const yyyy = mFecha[3];
+  // HH:MM o HH:MM:SS
+  const mTime = t.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  const hh = mTime ? mTime[1].padStart(2, '0') : '00';
+  const min = mTime ? mTime[2] : '00';
+  const ss = mTime?.[3] ?? '00';
+  // Construye Date en hora local
+  const d = new Date(`${yyyy}-${mm}-${dd}T${hh}:${min}:${ss}`);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
 export default function ImportadorCsv({
   open,
   onClose,
@@ -67,24 +124,82 @@ export default function ImportadorCsv({
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [loading, setLoading] = useState(false);
   const [recalcOpts, setRecalcOpts] = useState(true);
+  const [formatoDetectado, setFormatoDetectado] = useState<'hcc' | 'csv' | null>(null);
 
   async function analizar(f: File) {
     setFile(f);
     setResumen(null);
-    const text = await f.text();
-    const rows = parseCsv(text);
-    if (rows.length === 0) {
-      setPreview([]);
+    setPreview([]);
+    setFormatoDetectado(null);
+
+    const esXlsx = /\.xlsx?$/i.test(f.name);
+    const matrix = esXlsx ? await readXlsxMatrix(f) : parseCsv(await f.text());
+    if (matrix.length === 0) return;
+
+    // Intenta autodetección HCC primero (también funciona con CSV si tiene esos headers)
+    const hcc = detectarHcc(matrix);
+
+    if (hcc) {
+      setFormatoDetectado('hcc');
+      const lineas = await analizarHcc(matrix, hcc);
+      setPreview(lineas);
       return;
     }
-    // Detecta header
+
+    // Fallback: formato CSV genérico (codigo, fecha_hora, tipo)
+    setFormatoDetectado('csv');
+    const lineas = await analizarCsvGenerico(matrix);
+    setPreview(lineas);
+  }
+
+  async function analizarHcc(rows: string[][], layout: HccLayout): Promise<Linea[]> {
+    const start = layout.headerRowIdx + 1;
+    const codigos = new Set<string>();
+    for (let i = start; i < rows.length; i++) {
+      const codigo = rows[i][layout.colId]?.trim();
+      if (codigo) codigos.add(codigo);
+    }
+    const { data: empleados } = await supabase
+      .from('empleados')
+      .select('id, codigo')
+      .in('codigo', Array.from(codigos));
+    const mapById = new Map((empleados ?? []).map((e: { codigo: string; id: string }) => [e.codigo, e.id]));
+
+    const lineas: Linea[] = [];
+    for (let i = start; i < rows.length; i++) {
+      const r = rows[i];
+      const codigo = (r[layout.colId] ?? '').trim();
+      const fechaStr = (r[layout.colFecha] ?? '').trim();
+      const tiempoStr = (r[layout.colTiempo] ?? '').trim();
+
+      if (!codigo && !fechaStr && !tiempoStr) continue; // fila vacía
+
+      let error: string | undefined;
+      if (!codigo) error = 'ID faltante';
+      else if (!mapById.has(codigo)) error = `Empleado con ID "${codigo}" no encontrado`;
+
+      const iso = combinarFechaTiempo(fechaStr, tiempoStr);
+      if (!error && !iso) error = `Fecha/Tiempo inválido: "${fechaStr} ${tiempoStr}"`;
+
+      lineas.push({
+        fila: i + 1,
+        codigo,
+        fechaHora: iso ?? `${fechaStr} ${tiempoStr}`,
+        tipo: 'desconocido',
+        ok: !error,
+        error,
+      });
+    }
+    return lineas;
+  }
+
+  async function analizarCsvGenerico(rows: string[][]): Promise<Linea[]> {
     const header = rows[0].map((h) => h.toLowerCase());
     const start = header.includes('codigo') || header.includes('código') ? 1 : 0;
     const colCodigo = header.findIndex((h) => h === 'codigo' || h === 'código');
     const colFecha = header.findIndex((h) => h.includes('fecha'));
     const colTipo = header.findIndex((h) => h.includes('tipo'));
 
-    // Buscar empleados por código (lookup batch)
     const codigos = new Set<string>();
     for (let i = start; i < rows.length; i++) {
       const codigo = colCodigo >= 0 ? rows[i][colCodigo] : rows[i][0];
@@ -94,7 +209,7 @@ export default function ImportadorCsv({
       .from('empleados')
       .select('id, codigo')
       .in('codigo', Array.from(codigos));
-    const mapById = new Map((empleados ?? []).map((e: any) => [e.codigo, e.id]));
+    const mapById = new Map((empleados ?? []).map((e: { codigo: string; id: string }) => [e.codigo, e.id]));
 
     const lineas: Linea[] = [];
     for (let i = start; i < rows.length; i++) {
@@ -118,7 +233,7 @@ export default function ImportadorCsv({
         error,
       });
     }
-    setPreview(lineas);
+    return lineas;
   }
 
   async function importar() {
@@ -131,39 +246,45 @@ export default function ImportadorCsv({
         .from('empleados')
         .select('id, codigo')
         .in('codigo', codigos);
-      const map = new Map((empleados ?? []).map((e: any) => [e.codigo, e.id]));
+      const map = new Map((empleados ?? []).map((e: { codigo: string; id: string }) => [e.codigo, e.id]));
 
+      // hik_event_id sintético = "xlsx-{codigo}-{ISO}". Permite re-importar sin duplicar.
       const payload = validas.map((l) => ({
         empleado_id: map.get(l.codigo),
         fecha_hora: l.fechaHora,
         tipo: l.tipo,
-        dispositivo: 'CSV-Import',
+        dispositivo: 'XLSX-Import',
+        hik_event_id: `xlsx-${l.codigo}-${l.fechaHora}`,
       }));
 
-      // Insertar en batches de 500
       let insertadas = 0;
+      let duplicadas = 0;
       for (let i = 0; i < payload.length; i += 500) {
         const batch = payload.slice(i, i + 500);
-        const { error } = await supabase.from('checadas').insert(batch);
+        // upsert con onConflict en hik_event_id evita duplicados al re-importar.
+        const { data, error } = await supabase
+          .from('checadas')
+          .upsert(batch, { onConflict: 'hik_event_id', ignoreDuplicates: true })
+          .select('id');
         if (error) throw error;
-        insertadas += batch.length;
+        const inserted = data?.length ?? 0;
+        insertadas += inserted;
+        duplicadas += batch.length - inserted;
       }
 
-      let recalcMsg = '';
       if (recalcOpts && validas.length > 0) {
         const fechas = validas.map((l) => l.fechaHora.slice(0, 10)).sort();
         const desde = fechas[0];
         const hasta = fechas[fechas.length - 1];
         await recalcularAsistencia(desde, hasta);
-        recalcMsg = ` · asistencia recalculada del ${desde} al ${hasta}`;
       }
 
       setResumen({
         ok: validas.length,
         error: preview.length - validas.length,
         insertadas,
+        ignoradas_duplicadas: duplicadas,
       });
-      console.log(recalcMsg);
       onDone();
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Error');
@@ -173,14 +294,24 @@ export default function ImportadorCsv({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Importar checadas desde CSV" size="xl">
+    <Modal open={open} onClose={onClose} title="Importar checadas" size="xl">
       <div className="flex flex-col gap-4">
         <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-          <b>Formato esperado:</b> CSV con columnas <code>codigo</code> (del empleado),
-          <code> fecha_hora</code> (ISO o <i>YYYY-MM-DD HH:MM:SS</i>) y <code>tipo</code>
-          (<i>entrada / salida / desconocido</i>).
-          <br />
-          Ejemplo de fila: <code>"EMP001","2026-04-26 08:15:00","entrada"</code>
+          <b>Formatos soportados:</b>
+          <ul className="mt-1 list-disc pl-5">
+            <li>
+              <b>XLSX HCC</b> (Información de transacciones): se detecta automáticamente.
+              Solo se usan las columnas <code>ID</code>, <code>Fecha</code> y <code>Tiempo</code>.
+            </li>
+            <li>
+              <b>CSV genérico:</b> columnas <code>codigo</code>, <code>fecha_hora</code> (ISO),
+              <code> tipo</code> (entrada/salida/desconocido).
+            </li>
+          </ul>
+          <div className="mt-1 text-xs">
+            La entrada/salida del día se calcula automáticamente al recalcular asistencia
+            (primera checada = entrada, última = salida).
+          </div>
         </div>
 
         <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
@@ -188,7 +319,7 @@ export default function ImportadorCsv({
           <div className="flex-1">
             <Input
               type="file"
-              accept=".csv,text/csv"
+              accept=".csv,.xlsx,.xls,text/csv"
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) void analizar(f);
@@ -197,6 +328,14 @@ export default function ImportadorCsv({
             {file && (
               <div className="mt-1 text-xs text-slate-500">
                 {file.name} — {(file.size / 1024).toFixed(1)} KB
+                {formatoDetectado && (
+                  <>
+                    {' · '}
+                    <span className="font-medium text-brand-700">
+                      Formato: {formatoDetectado === 'hcc' ? 'XLSX HCC' : 'CSV genérico'}
+                    </span>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -277,8 +416,10 @@ export default function ImportadorCsv({
             <div className="flex items-center gap-2 font-semibold">
               <CheckCircle2 size={16} /> Importación completada
             </div>
-            <div className="mt-2">
-              {resumen.insertadas} checadas insertadas · {resumen.error} ignoradas por error.
+            <div className="mt-2 space-y-0.5">
+              <div>Checadas insertadas: <b>{resumen.insertadas}</b></div>
+              <div>Duplicadas (ya existían): <b>{resumen.ignoradas_duplicadas}</b></div>
+              <div>Filas con error: <b>{resumen.error}</b></div>
             </div>
           </div>
         )}
