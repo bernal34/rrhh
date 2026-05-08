@@ -166,7 +166,7 @@ function RowPreview({ r }: { r: ResolvedRow }) {
   if (r.motivo_omitir) notas.push(r.motivo_omitir);
   if (r.faltantes.length > 0) notas.push(`Se creará: ${r.faltantes.join(' · ')}`);
   if (r.niveles_intermedios.length > 0) {
-    notas.push(`Áreas: ${r.niveles_intermedios.join(' › ')}`);
+    notas.push(`Contratista/Área: ${r.niveles_intermedios.join(' › ')}`);
   }
   return (
     <tr className="border-t border-slate-100">
