@@ -230,14 +230,54 @@ export async function listEmpleadosCodigos(): Promise<Map<string, string>> {
 export async function applyPlan(plan: Plan): Promise<{
   creados: number;
   actualizados: number;
+  sucursales_creadas: number;
+  puestos_creados: number;
   errores: Array<{ codigo: string; nombre: string; error: string }>;
 }> {
   const errores: Array<{ codigo: string; nombre: string; error: string }> = [];
   let creados = 0;
   let actualizados = 0;
+  let sucursales_creadas = 0;
+  let puestos_creados = 0;
 
+  // 1) Crear sucursales faltantes y obtener su id
+  const sucursalIdByName = new Map<string, string>();
+  if (plan.resumen.sucursales_faltantes.length > 0) {
+    const inserts = plan.resumen.sucursales_faltantes.map((nombre) => ({ nombre }));
+    const { data, error } = await supabase
+      .from('sucursales')
+      .insert(inserts)
+      .select('id, nombre');
+    if (error) throw new Error(`Error creando sucursales: ${error.message}`);
+    (data ?? []).forEach((s: { id: string; nombre: string }) => {
+      sucursalIdByName.set(norm(s.nombre), s.id);
+    });
+    sucursales_creadas = data?.length ?? 0;
+  }
+
+  // 2) Crear puestos faltantes (la tabla tiene unique en nombre, así que upsert para evitar duplicados)
+  const puestoIdByName = new Map<string, string>();
+  if (plan.resumen.puestos_faltantes.length > 0) {
+    const inserts = plan.resumen.puestos_faltantes.map((nombre) => ({ nombre }));
+    const { data, error } = await supabase
+      .from('puestos')
+      .upsert(inserts, { onConflict: 'nombre' })
+      .select('id, nombre');
+    if (error) throw new Error(`Error creando puestos: ${error.message}`);
+    (data ?? []).forEach((p: { id: string; nombre: string }) => {
+      puestoIdByName.set(norm(p.nombre), p.id);
+    });
+    puestos_creados = data?.length ?? 0;
+  }
+
+  // 3) Upsert de empleados resolviendo IDs recién creados cuando aplique
   for (const r of plan.rows) {
     if (r.accion === 'omitir') continue;
+    const sucursal_id =
+      r.sucursal_id ?? (r.sucursal_path ? sucursalIdByName.get(norm(r.sucursal_path)) ?? null : null);
+    const puesto_id =
+      r.puesto_id ?? (r.puesto_path ? puestoIdByName.get(norm(r.puesto_path)) ?? null : null);
+
     const payload: Record<string, unknown> = {
       codigo: r.codigo,
       nombre: r.nombre,
@@ -245,8 +285,8 @@ export async function applyPlan(plan: Plan): Promise<{
       apellido_materno: r.apellido_materno,
       email: r.email,
       fecha_ingreso: r.fecha_ingreso,
-      sucursal_id: r.sucursal_id,
-      puesto_id: r.puesto_id,
+      sucursal_id,
+      puesto_id,
     };
     if (r.existing_id) {
       payload.id = r.existing_id;
@@ -261,5 +301,5 @@ export async function applyPlan(plan: Plan): Promise<{
     }
   }
 
-  return { creados, actualizados, errores };
+  return { creados, actualizados, sucursales_creadas, puestos_creados, errores };
 }

@@ -16,6 +16,7 @@ import {
   listEmpleadosCodigos,
   parseXlsxHCC,
 } from '@/services/hccImportService';
+import { listSucursales, listPuestos } from '@/services/catalogosService';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -85,15 +86,18 @@ export default function EmpleadosList() {
   async function onImportarExcel(file: File) {
     setImportExcelLoading(true);
     try {
-      const [filas, codigosMap] = await Promise.all([
+      // Fetch fresco de catálogos para no duplicar si re-importas tras crear automáticos.
+      const [filas, codigosMap, sucursalesFresh, puestosFresh] = await Promise.all([
         parseXlsxHCC(file),
         listEmpleadosCodigos(),
+        listSucursales(),
+        listPuestos(),
       ]);
       if (filas.length === 0) {
         alert('No se encontraron filas válidas en el archivo (verifica que tenga los encabezados ID, *Nombre, *Apellido, *Departamento).');
         return;
       }
-      const plan = buildPlan(filas, sucursales, puestos, codigosMap);
+      const plan = buildPlan(filas, sucursalesFresh, puestosFresh, codigosMap);
       setImportPlan(plan);
       setImportModalOpen(true);
     } catch (e) {

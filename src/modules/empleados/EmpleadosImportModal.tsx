@@ -15,6 +15,8 @@ export default function EmpleadosImportModal({ open, onClose, plan, onApplied }:
   const [resultado, setResultado] = useState<{
     creados: number;
     actualizados: number;
+    sucursales_creadas: number;
+    puestos_creados: number;
     errores: Array<{ codigo: string; nombre: string; error: string }>;
   } | null>(null);
 
@@ -46,8 +48,10 @@ export default function EmpleadosImportModal({ open, onClose, plan, onApplied }:
           <div className="rounded-md border border-green-200 bg-green-50 p-4">
             <h3 className="font-semibold text-green-900">Import completado</h3>
             <ul className="mt-2 text-sm text-green-800">
-              <li>Creados: <b>{resultado.creados}</b></li>
-              <li>Actualizados: <b>{resultado.actualizados}</b></li>
+              <li>Empleados creados: <b>{resultado.creados}</b></li>
+              <li>Empleados actualizados: <b>{resultado.actualizados}</b></li>
+              <li>Sucursales creadas: <b>{resultado.sucursales_creadas}</b></li>
+              <li>Puestos creados: <b>{resultado.puestos_creados}</b></li>
               <li>Errores: <b>{resultado.errores.length}</b></li>
             </ul>
           </div>
@@ -78,19 +82,21 @@ export default function EmpleadosImportModal({ open, onClose, plan, onApplied }:
 
           {(plan.resumen.sucursales_faltantes.length > 0 ||
             plan.resumen.puestos_faltantes.length > 0) && (
-            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm">
-              <div className="font-semibold text-amber-900">
-                Catálogos faltantes (los empleados se crean/actualizan, pero estos campos quedan vacíos)
+            <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm">
+              <div className="font-semibold text-blue-900">
+                Catálogos que se crearán automáticamente
               </div>
-              <ul className="mt-2 space-y-1 text-amber-800">
+              <ul className="mt-2 space-y-1 text-blue-800">
                 {plan.resumen.sucursales_faltantes.length > 0 && (
                   <li>
-                    <b>Sucursales:</b> {plan.resumen.sucursales_faltantes.join(', ')}
+                    <b>Sucursales ({plan.resumen.sucursales_faltantes.length}):</b>{' '}
+                    {plan.resumen.sucursales_faltantes.join(', ')}
                   </li>
                 )}
                 {plan.resumen.puestos_faltantes.length > 0 && (
                   <li>
-                    <b>Puestos:</b> {plan.resumen.puestos_faltantes.join(', ')}
+                    <b>Puestos ({plan.resumen.puestos_faltantes.length}):</b>{' '}
+                    {plan.resumen.puestos_faltantes.join(', ')}
                   </li>
                 )}
               </ul>
@@ -158,7 +164,7 @@ function RowPreview({ r }: { r: ResolvedRow }) {
   const apellido = [r.apellido_paterno, r.apellido_materno].filter(Boolean).join(' ');
   const notas: string[] = [];
   if (r.motivo_omitir) notas.push(r.motivo_omitir);
-  notas.push(...r.faltantes);
+  if (r.faltantes.length > 0) notas.push(`Se creará: ${r.faltantes.join(' · ')}`);
   if (r.niveles_intermedios.length > 0) {
     notas.push(`Sub-niveles ignorados: ${r.niveles_intermedios.join(' › ')}`);
   }
