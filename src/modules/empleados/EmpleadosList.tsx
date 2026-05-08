@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, Download, FileText, FileSignature, List, LayoutGrid, FileDown, FileSpreadsheet, Users } from 'lucide-react';
+import { Plus, Search, Download, FileText, FileSignature, List, LayoutGrid, FileDown, FileSpreadsheet, FileUp, Users } from 'lucide-react';
+import { useRef } from 'react';
 import PageHeader from '@/components/PageHeader';
 import { abrirConstanciaLaboral } from '@/lib/constancia';
 import { abrirContrato } from '@/lib/contrato';
@@ -9,11 +10,18 @@ import { useEmpleados } from '@/hooks/useEmpleados';
 import { useCatalogos } from '@/hooks/useCatalogos';
 import { useAuth } from '@/lib/auth';
 import { Empleado, importarDesdeHik } from '@/services/empleadosService';
+import {
+  Plan,
+  buildPlan,
+  listEmpleadosCodigos,
+  parseXlsxHCC,
+} from '@/services/hccImportService';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Avatar } from '@/components/ui/Avatar';
 import EmpleadoForm from './EmpleadoForm';
+import EmpleadosImportModal from './EmpleadosImportModal';
 
 const estatusBadge: Record<string, string> = {
   activo: 'bg-green-100 text-green-700',
@@ -44,6 +52,10 @@ export default function EmpleadosList() {
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
 
   const [importing, setImporting] = useState(false);
+  const [importExcelLoading, setImportExcelLoading] = useState(false);
+  const [importPlan, setImportPlan] = useState<Plan | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: dataAll, loading, error, refresh, baja } = useEmpleados({
     sucursal_id: sucursalId || undefined,
     estatus: estatus || undefined,
@@ -67,6 +79,28 @@ export default function EmpleadosList() {
       alert(`Error: ${e instanceof Error ? e.message : e}`);
     } finally {
       setImporting(false);
+    }
+  }
+
+  async function onImportarExcel(file: File) {
+    setImportExcelLoading(true);
+    try {
+      const [filas, codigosMap] = await Promise.all([
+        parseXlsxHCC(file),
+        listEmpleadosCodigos(),
+      ]);
+      if (filas.length === 0) {
+        alert('No se encontraron filas válidas en el archivo (verifica que tenga los encabezados ID, *Nombre, *Apellido, *Departamento).');
+        return;
+      }
+      const plan = buildPlan(filas, empresas, sucursales, puestos, codigosMap);
+      setImportPlan(plan);
+      setImportModalOpen(true);
+    } catch (e) {
+      alert(`No se pudo leer el archivo: ${e instanceof Error ? e.message : e}`);
+    } finally {
+      setImportExcelLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }
 
@@ -290,6 +324,24 @@ ${pdfFooterHTML(empresa)}
                 <Button variant="secondary" onClick={onImportar} loading={importing}>
                   <Download size={16} /> Importar desde HCC
                 </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => fileInputRef.current?.click()}
+                  loading={importExcelLoading}
+                  title="Importar desde archivo Excel exportado de HCC"
+                >
+                  <FileUp size={16} /> Importar Excel
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) onImportarExcel(f);
+                  }}
+                />
                 <Button onClick={onNuevo}>
                   <Plus size={16} /> Nuevo empleado
                 </Button>
@@ -532,6 +584,13 @@ ${pdfFooterHTML(empresa)}
         onClose={() => setFormOpen(false)}
         empleado={editing}
         onSaved={refresh}
+      />
+
+      <EmpleadosImportModal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        plan={importPlan}
+        onApplied={refresh}
       />
     </div>
   );
