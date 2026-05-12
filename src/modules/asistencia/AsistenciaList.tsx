@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Download, FileText, Upload } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { RefreshCw, Download, FileText, Upload, UserSearch } from 'lucide-react';
 import ImportadorCsv from './ImportadorCsv';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -31,15 +32,18 @@ const estatusColor: Record<string, string> = {
 export default function AsistenciaList() {
   const { puedeEditar } = useAuth();
   const editar = puedeEditar('asistencia');
-  const { sucursales } = useCatalogos();
+  const { sucursales, puestos } = useCatalogos();
   const [desde, setDesde] = useState(hoy());
   const [hasta, setHasta] = useState(hoy());
   const [sucursal, setSucursal] = useState('');
   const [empresaId, setEmpresaId] = useState('');
+  const [puestoId, setPuestoId] = useState('');
   const [estatus, setEstatus] = useState('');
   const [allRows, setAllRows] = useState<AsistenciaRow[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
-  const [empleadoEmpresaMap, setEmpleadoEmpresaMap] = useState<Record<string, string | null>>({});
+  const [empleadoMeta, setEmpleadoMeta] = useState<
+    Record<string, { empresa_id: string | null; puesto_id: string | null }>
+  >({});
   const [loading, setLoading] = useState(false);
   const [recalc, setRecalc] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -49,14 +53,16 @@ export default function AsistenciaList() {
     try {
       const [rows, empMap] = await Promise.all([
         getAsistencia({ desde, hasta, sucursal: sucursal || undefined, estatus: estatus || undefined }),
-        supabase.from('empleados').select('id, empresa_id'),
+        supabase.from('empleados').select('id, empresa_id, puesto_id'),
       ]);
       setAllRows(rows);
-      const map: Record<string, string | null> = {};
-      ((empMap.data ?? []) as Array<{ id: string; empresa_id: string | null }>).forEach(
-        (e) => (map[e.id] = e.empresa_id),
-      );
-      setEmpleadoEmpresaMap(map);
+      const map: Record<string, { empresa_id: string | null; puesto_id: string | null }> = {};
+      ((empMap.data ?? []) as Array<{
+        id: string;
+        empresa_id: string | null;
+        puesto_id: string | null;
+      }>).forEach((e) => (map[e.id] = { empresa_id: e.empresa_id, puesto_id: e.puesto_id }));
+      setEmpleadoMeta(map);
     } finally {
       setLoading(false);
     }
@@ -64,10 +70,13 @@ export default function AsistenciaList() {
 
   const rows = useMemo(
     () =>
-      empresaId
-        ? allRows.filter((r) => empleadoEmpresaMap[r.empleado_id] === empresaId)
-        : allRows,
-    [allRows, empresaId, empleadoEmpresaMap],
+      allRows.filter((r) => {
+        const meta = empleadoMeta[r.empleado_id];
+        if (empresaId && meta?.empresa_id !== empresaId) return false;
+        if (puestoId && meta?.puesto_id !== puestoId) return false;
+        return true;
+      }),
+    [allRows, empresaId, puestoId, empleadoMeta],
   );
 
   useEffect(() => {
@@ -161,6 +170,11 @@ ${pdfFooterHTML(empresa)}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Asistencia</h1>
         <div className="flex gap-2">
+          <Link to="/asistencia/empleado">
+            <Button variant="secondary" size="sm">
+              <UserSearch size={14} /> Por empleado
+            </Button>
+          </Link>
           {editar && (
             <>
               <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
@@ -185,7 +199,7 @@ ${pdfFooterHTML(empresa)}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-7">
         <Input label="Desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
         <Input label="Hasta" type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
         <Select
@@ -201,6 +215,13 @@ ${pdfFooterHTML(empresa)}
           placeholder="Todas"
           value={sucursal}
           onChange={(e) => setSucursal(e.target.value)}
+        />
+        <Select
+          label="Puesto"
+          options={puestos.map((p) => ({ value: p.id, label: p.nombre }))}
+          placeholder="Todos"
+          value={puestoId}
+          onChange={(e) => setPuestoId(e.target.value)}
         />
         <Select
           label="Estatus"

@@ -9,6 +9,7 @@ import SucursalesList from './modules/sucursales/SucursalesList';
 import PuestosList from './modules/puestos/PuestosList';
 import NominaPage from './modules/nomina/NominaPage';
 import AsistenciaList from './modules/asistencia/AsistenciaList';
+import AsistenciaEmpleado from './modules/asistencia/AsistenciaEmpleado';
 import DocumentosList from './modules/documentos/DocumentosList';
 import ReportesList from './modules/reportes/ReportesList';
 import HorariosList from './modules/horarios/HorariosList';
@@ -53,6 +54,10 @@ export default function App() {
                 <Route path="/puestos" element={r('puestos', <PuestosList />)} />
                 <Route path="/horarios" element={r('horarios', <HorariosList />)} />
                 <Route path="/asistencia" element={r('asistencia', <AsistenciaList />)} />
+                <Route
+                  path="/asistencia/empleado"
+                  element={r('asistencia', <AsistenciaEmpleado />)}
+                />
                 <Route path="/incidencias" element={r('incidencias', <IncidenciasList />)} />
                 <Route path="/vacaciones" element={r('vacaciones', <VacacionesPage />)} />
                 <Route path="/calendario" element={r('calendario', <CalendarioPage />)} />
