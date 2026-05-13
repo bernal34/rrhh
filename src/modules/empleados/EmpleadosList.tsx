@@ -48,6 +48,7 @@ export default function EmpleadosList() {
   }
   const [sucursalId, setSucursalId] = useState('');
   const [empresaId, setEmpresaId] = useState('');
+  const [puestoId, setPuestoId] = useState('');
   const [estatus, setEstatus] = useState('activo');
   const [editing, setEditing] = useState<Empleado | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -64,7 +65,11 @@ export default function EmpleadosList() {
     estatus: estatus || undefined,
     q,
   });
-  const data = empresaId ? dataAll.filter((e) => e.empresa_id === empresaId) : dataAll;
+  const data = dataAll.filter((e) => {
+    if (empresaId && e.empresa_id !== empresaId) return false;
+    if (puestoId && e.puesto_id !== puestoId) return false;
+    return true;
+  });
   const { sucursales, puestos } = useCatalogos();
 
   useEffect(() => {
@@ -362,7 +367,7 @@ ${pdfFooterHTML(empresa)}
         }
       />
 
-      <div className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-5">
         <div className="relative md:col-span-2">
           <Search
             size={16}
@@ -386,6 +391,12 @@ ${pdfFooterHTML(empresa)}
           placeholder="Todas las sucursales"
           value={sucursalId}
           onChange={(e) => setSucursalId(e.target.value)}
+        />
+        <Select
+          options={puestos.map((p) => ({ value: p.id, label: p.nombre }))}
+          placeholder="Todos los puestos"
+          value={puestoId}
+          onChange={(e) => setPuestoId(e.target.value)}
         />
         <Select
           options={[
