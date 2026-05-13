@@ -2,6 +2,7 @@ import { Tabs } from '@/components/ui/Tabs';
 import ReporteDiario from './ReporteDiario';
 import ResumenMensual from './ResumenMensual';
 import CalendarioMensual from './CalendarioMensual';
+import TablaSemanal from './TablaSemanal';
 import TopRetardosFaltas from './TopRetardosFaltas';
 
 export default function ReportesList() {
@@ -11,6 +12,7 @@ export default function ReportesList() {
       <Tabs
         tabs={[
           { key: 'diario', label: 'Diario / Rango', content: <ReporteDiario /> },
+          { key: 'semanal', label: 'Tabla semanal', content: <TablaSemanal /> },
           { key: 'resumen', label: 'Resumen mensual', content: <ResumenMensual /> },
           { key: 'calendario', label: 'Calendario mensual', content: <CalendarioMensual /> },
           { key: 'top', label: 'Top retardos / faltas', content: <TopRetardosFaltas /> },
