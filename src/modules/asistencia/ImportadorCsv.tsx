@@ -11,14 +11,11 @@ type Linea = {
   fila: number;
   codigo: string;
   fechaHora: string;
-  tipo: 'entrada' | 'salida' | 'desconocido';
   ok: boolean;
   error?: string;
 };
 
 type Resumen = { ok: number; error: number; insertadas: number; ignoradas_duplicadas: number };
-
-const TIPOS_VALIDOS = new Set(['entrada', 'salida', 'desconocido']);
 
 function parseCsv(text: string): string[][] {
   // CSV parser sencillo (no soporta multilínea pero sí comillas)
@@ -196,7 +193,6 @@ export default function ImportadorCsv({
         fila: i + 1,
         codigo,
         fechaHora: iso ?? `${fechaStr} ${tiempoStr}`,
-        tipo: 'desconocido',
         ok: !error,
         error,
       });
@@ -209,7 +205,6 @@ export default function ImportadorCsv({
     const start = header.includes('codigo') || header.includes('código') ? 1 : 0;
     const colCodigo = header.findIndex((h) => h === 'codigo' || h === 'código');
     const colFecha = header.findIndex((h) => h.includes('fecha'));
-    const colTipo = header.findIndex((h) => h.includes('tipo'));
 
     const codigos = new Set<string>();
     for (let i = start; i < rows.length; i++) {
@@ -227,8 +222,6 @@ export default function ImportadorCsv({
       const r = rows[i];
       const codigo = (colCodigo >= 0 ? r[colCodigo] : r[0]) ?? '';
       const fechaStr = (colFecha >= 0 ? r[colFecha] : r[1]) ?? '';
-      const tipoStr = ((colTipo >= 0 ? r[colTipo] : r[2]) ?? 'desconocido').toLowerCase();
-      const tipo = (TIPOS_VALIDOS.has(tipoStr) ? tipoStr : 'desconocido') as Linea['tipo'];
 
       let error: string | undefined;
       if (!codigo) error = 'Código faltante';
@@ -239,7 +232,6 @@ export default function ImportadorCsv({
         fila: i + 1,
         codigo,
         fechaHora: !isNaN(dt.getTime()) ? dt.toISOString() : fechaStr,
-        tipo,
         ok: !error,
         error,
       });
@@ -263,7 +255,6 @@ export default function ImportadorCsv({
       const payload = validas.map((l) => ({
         empleado_id: map.get(l.codigo),
         fecha_hora: l.fechaHora,
-        tipo: l.tipo,
         dispositivo: 'XLSX-Import',
         hik_event_id: `xlsx-${l.codigo}-${l.fechaHora}`,
       }));
@@ -298,7 +289,22 @@ export default function ImportadorCsv({
       });
       onDone();
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Error');
+      const msg =
+        e instanceof Error
+          ? e.message
+          : typeof e === 'object' && e !== null
+            ? // Errores de Supabase tienen { message, details, hint, code }
+              [
+                (e as { message?: string }).message,
+                (e as { details?: string }).details,
+                (e as { hint?: string }).hint,
+                (e as { code?: string }).code ? `(${(e as { code?: string }).code})` : '',
+              ]
+                .filter(Boolean)
+                .join(' · ')
+            : String(e);
+      console.error('Error al importar checadas:', e);
+      alert(`Error al importar: ${msg || 'sin detalle (ver consola)'}`);
     } finally {
       setLoading(false);
     }
@@ -315,8 +321,7 @@ export default function ImportadorCsv({
               Solo se usan las columnas <code>ID</code>, <code>Fecha</code> y <code>Tiempo</code>.
             </li>
             <li>
-              <b>CSV genérico:</b> columnas <code>codigo</code>, <code>fecha_hora</code> (ISO),
-              <code> tipo</code> (entrada/salida/desconocido).
+              <b>CSV genérico:</b> columnas <code>codigo</code> y <code>fecha_hora</code> (ISO).
             </li>
           </ul>
           <div className="mt-1 text-xs">
@@ -380,7 +385,6 @@ export default function ImportadorCsv({
                     <th className="px-2 py-1.5">Fila</th>
                     <th className="px-2 py-1.5">Código</th>
                     <th className="px-2 py-1.5">Fecha/hora</th>
-                    <th className="px-2 py-1.5">Tipo</th>
                     <th className="px-2 py-1.5">Estado</th>
                   </tr>
                 </thead>
@@ -392,7 +396,6 @@ export default function ImportadorCsv({
                       <td className="px-2 py-1 text-slate-600 tabular-nums">
                         {fmtFechaHoraDisplay(l.fechaHora)}
                       </td>
-                      <td className="px-2 py-1 capitalize">{l.tipo}</td>
                       <td className="px-2 py-1">
                         {l.ok ? (
                           <span className="text-green-700">OK</span>
@@ -404,7 +407,7 @@ export default function ImportadorCsv({
                   ))}
                   {preview.length > 100 && (
                     <tr>
-                      <td colSpan={5} className="px-2 py-2 text-center text-slate-500">
+                      <td colSpan={4} className="px-2 py-2 text-center text-slate-500">
                         … y {preview.length - 100} filas más
                       </td>
                     </tr>
