@@ -133,6 +133,9 @@ export default function ImportadorCsv({
   const [loading, setLoading] = useState(false);
   const [recalcOpts, setRecalcOpts] = useState(true);
   const [formatoDetectado, setFormatoDetectado] = useState<'hcc' | 'csv' | null>(null);
+  const [progreso, setProgreso] = useState<{ etapa: string; actual: number; total: number } | null>(
+    null,
+  );
 
   async function analizar(f: File) {
     setFile(f);
@@ -242,6 +245,7 @@ export default function ImportadorCsv({
   async function importar() {
     if (preview.length === 0) return;
     setLoading(true);
+    setProgreso(null);
     try {
       const validas = preview.filter((l) => l.ok);
       const codigos = Array.from(new Set(validas.map((l) => l.codigo)));
@@ -259,10 +263,17 @@ export default function ImportadorCsv({
         hik_event_id: `xlsx-${l.codigo}-${l.fechaHora}`,
       }));
 
+      const BATCH = 200;
       let insertadas = 0;
       let duplicadas = 0;
-      for (let i = 0; i < payload.length; i += 500) {
-        const batch = payload.slice(i, i + 500);
+      const totalBatches = Math.ceil(payload.length / BATCH);
+      for (let i = 0; i < payload.length; i += BATCH) {
+        setProgreso({
+          etapa: 'Guardando checadas',
+          actual: Math.floor(i / BATCH) + 1,
+          total: totalBatches,
+        });
+        const batch = payload.slice(i, i + BATCH);
         // upsert con onConflict en hik_event_id evita duplicados al re-importar.
         const { data, error } = await supabase
           .from('checadas')
@@ -278,9 +289,25 @@ export default function ImportadorCsv({
         const fechas = validas.map((l) => l.fechaHora.slice(0, 10)).sort();
         const desde = fechas[0];
         const hasta = fechas[fechas.length - 1];
-        await recalcularAsistencia(desde, hasta);
+
+        // Solo recalculamos los empleados que recibieron checadas, en paralelo
+        // (concurrencia 4) para no saturar Supabase y evitar statement timeout
+        // que ocurre cuando se recalcan todos los empleados activos × todos los días
+        // en una sola llamada.
+        const empleadoIds = Array.from(
+          new Set(payload.map((p) => p.empleado_id).filter((x): x is string => !!x)),
+        );
+        const CONCURRENCIA = 4;
+        let done = 0;
+        for (let i = 0; i < empleadoIds.length; i += CONCURRENCIA) {
+          const batch = empleadoIds.slice(i, i + CONCURRENCIA);
+          await Promise.all(batch.map((id) => recalcularAsistencia(desde, hasta, id)));
+          done += batch.length;
+          setProgreso({ etapa: 'Recalculando asistencia', actual: done, total: empleadoIds.length });
+        }
       }
 
+      setProgreso(null);
       setResumen({
         ok: validas.length,
         error: preview.length - validas.length,
@@ -425,6 +452,25 @@ export default function ImportadorCsv({
               Recalcular asistencia del rango después de importar
             </label>
           </>
+        )}
+
+        {progreso && (
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm">
+            <div className="mb-2 flex items-center justify-between text-blue-900">
+              <span className="font-medium">{progreso.etapa}…</span>
+              <span className="tabular-nums">
+                {progreso.actual} / {progreso.total}
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-blue-100">
+              <div
+                className="h-full bg-blue-500 transition-all"
+                style={{
+                  width: `${progreso.total === 0 ? 0 : Math.round((progreso.actual / progreso.total) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
         )}
 
         {resumen && (
